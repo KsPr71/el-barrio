@@ -41,24 +41,7 @@ function PlaceholderMapa({
   const colors = useColors();
   return (
     <View style={[styles.wrapper, { minHeight: height }]}>
-      <View
-        style={[
-          styles.placeholder,
-          {
-            backgroundColor: colors.border,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <Text className="text-4xl mb-2">📍</Text>
-        <Text
-          className="text-sm text-center px-4"
-          style={{ color: colors.muted }}
-          numberOfLines={2}
-        >
-          {localizacion}
-        </Text>
-      </View>
+
       <TouchableOpacity
         onPress={() => Linking.openURL(openUrl)}
         activeOpacity={0.8}

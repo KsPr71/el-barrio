@@ -1,5 +1,7 @@
 import { useColors } from "@/hooks/use-colors";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
+import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
+import { useOpiniones } from "@/hooks/use-opiniones";
 import { Image } from "expo-image";
 import { Text, TouchableOpacity, View } from "react-native";
 
@@ -20,6 +22,7 @@ function getFirstImageUrl(imagenes: string | null): string | null {
 export function SitioRelevanteCard({ sitio, onPress }: SitioRelevanteCardProps) {
   const colors = useColors();
   const imagenUrl = getFirstImageUrl(sitio.imagenes);
+  const { stats } = useOpiniones(sitio.id);
 
   const content = (
     <View
@@ -52,6 +55,18 @@ export function SitioRelevanteCard({ sitio, onPress }: SitioRelevanteCardProps) 
             {sitio.nombre}
           </Text>
 
+          {stats.total > 0 && (
+            <View className="mt-2">
+              <EstrellasPuntuacion
+                promedio={stats.promedio}
+                total={stats.total}
+                size={14}
+                showNumber
+                showTotal
+              />
+            </View>
+          )}
+
           {sitio.descripcion ? (
             <Text
               className="text-sm text-muted mt-1 leading-5"
@@ -65,13 +80,6 @@ export function SitioRelevanteCard({ sitio, onPress }: SitioRelevanteCardProps) 
               📍 {sitio.direccion}
             </Text>
           ) : null}
-
-          {sitio.contador_opiniones > 0 && (
-            <Text className="text-xs text-muted mt-2">
-              {sitio.contador_opiniones} opinión
-              {sitio.contador_opiniones !== 1 ? "es" : ""}
-            </Text>
-          )}
         </View>
       </View>
   );

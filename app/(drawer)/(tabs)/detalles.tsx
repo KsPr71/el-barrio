@@ -1,17 +1,24 @@
 import { ScreenContainer } from "@/components/screen-container";
 import { UbicacionMapa } from "@/components/ubicacion-mapa";
+import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
+import { FormularioOpinion } from "@/components/formulario-opinion";
+import { Collapsible } from "@/components/ui/collapsible";
 import { useColors } from "@/hooks/use-colors";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
+import { useOpiniones } from "@/hooks/use-opiniones";
 import { supabase } from "@/lib/supabase";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function getFirstImageUrl(imagenes: string | null): string | null {
   if (!imagenes || !imagenes.trim()) return null;
@@ -23,10 +30,18 @@ function getFirstImageUrl(imagenes: string | null): string | null {
 
 export default function DetallesScreen() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [sitio, setSitio] = useState<SitioRelevante | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Usamos el ID de la ruta para cargar opiniones, independientemente de si ya cargamos el sitio
+  const sitioId =
+    id && !Number.isNaN(parseInt(id, 10)) ? parseInt(id, 10) : null;
+  const { opiniones, stats, crearOpinion, refresh: refreshOpiniones } =
+    useOpiniones(sitioId);
 
   const fetchSitio = useCallback(async (sitioId: string) => {
     setLoading(true);
@@ -98,10 +113,18 @@ export default function DetallesScreen() {
 
   return (
     <ScreenContainer className="flex-1">
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
+        <ScrollView
+          contentContainerStyle={{
+            paddingBottom: Math.max(24, insets.bottom + 16),
+          }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {imagenUrl ? (
           <Image
             source={{ uri: imagenUrl }}
@@ -125,8 +148,20 @@ export default function DetallesScreen() {
         )}
 
         <View className="p-5 gap-4">
-          <Text className="text-2xl font-bold text-foreground">{sitio.nombre}</Text>
-
+          <View>
+            <Text className="text-2xl font-bold text-foreground">{sitio.nombre}</Text>
+            {stats.total > 0 && (
+              <View className="mt-2">
+                <EstrellasPuntuacion
+                  promedio={stats.promedio}
+                  total={stats.total}
+                  size={20}
+                  showNumber
+                  showTotal
+                />
+              </View>
+            )}
+          </View>
 
           {sitio.descripcion ? (
             <Text className="text-base text-foreground leading-6">
@@ -155,12 +190,6 @@ export default function DetallesScreen() {
             </View>
           ) : null}
 
-          {sitio.contador_opiniones > 0 && (
-            <Text className="text-sm text-muted">
-              {sitio.contador_opiniones} opinión{sitio.contador_opiniones !== 1 ? "es" : ""}
-            </Text>
-          )}
-
           {sitio.localizacion ? (
             <View className="mt-2">
               <Text className="text-base font-semibold text-foreground mb-2">
@@ -169,8 +198,74 @@ export default function DetallesScreen() {
               <UbicacionMapa localizacion={sitio.localizacion} />
             </View>
           ) : null}
+
+          {/* Sección de Opiniones de Clientes */}
+          {opiniones.length > 0 && (
+            <View className="mt-4">
+              <Text className="text-lg font-semibold text-foreground mb-3">
+                Opiniones de Clientes ({opiniones.length})
+              </Text>
+              <ScrollView
+                style={{ maxHeight: 400 }}
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={true}
+              >
+                <View className="gap-4">
+                  {opiniones.map((opinion) => (
+                    <View
+                      key={opinion.id}
+                      className="rounded-xl p-4"
+                      style={{ backgroundColor: colors.surface }}
+                    >
+                      <View className="flex-row items-center justify-between mb-2">
+                        <EstrellasPuntuacion
+                          promedio={opinion.calificacion}
+                          size={16}
+                        />
+                        {opinion.autor_texto && (
+                          <Text className="text-sm font-medium text-foreground">
+                            {opinion.autor_texto}
+                          </Text>
+                        )}
+                      </View>
+                      {opinion.comentario && (
+                        <Text className="text-sm text-foreground mt-2 leading-5">
+                          {opinion.comentario}
+                        </Text>
+                      )}
+                      <Text className="text-xs text-muted mt-2">
+                        {new Date(opinion.creado_at).toLocaleDateString("es-ES", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Formulario para escribir opinión - dentro de accordion */}
+          {sitioId && (
+            <View className="mt-4">
+              <Collapsible title="Escribe tu opinión">
+                <FormularioOpinion
+                  sitioId={sitioId}
+                  onCreateOpinion={crearOpinion}
+                  onSuccess={() => {
+                    refreshOpiniones();
+                    // Marcar que se necesita refrescar los sitios en index
+                    // Esto se manejará con useFocusEffect en index.tsx
+                  }}
+                />
+              </Collapsible>
+            </View>
+          )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </ScreenContainer>
   );
 }

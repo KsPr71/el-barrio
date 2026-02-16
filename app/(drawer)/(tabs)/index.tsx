@@ -36,11 +36,12 @@ export default function HomeScreen() {
     }
   }, [params.categoriaId]);
 
-  // Refrescar el perfil cuando la pantalla recibe foco
+  // Refrescar el perfil y los sitios cuando la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
       refreshProfile();
-    }, [refreshProfile])
+      refresh(); // Refrescar sitios para actualizar las estrellas después de crear una opinión
+    }, [refreshProfile, refresh])
   );
 
   // Obtener el ID de la provincia del usuario
@@ -82,12 +83,23 @@ export default function HomeScreen() {
     }
   }, [selectedTipoId, tiposDisponibles]);
 
+  // Sincronizar el estado local con los parámetros de la ruta cuando cambia desde el carousel
+  const handleSelectTipo = useCallback((tipoId: number | null) => {
+    setSelectedTipoId(tipoId);
+    // Actualizar los parámetros de la ruta para sincronizar con el drawer
+    if (tipoId !== null) {
+      router.setParams({ categoriaId: String(tipoId) });
+    } else {
+      router.setParams({});
+    }
+  }, []);
+
   return (
-    <ScreenContainer className="p-2 flex-1">
+    <ScreenContainer className="flex-1">
       <View className="flex-1">
-        {/* Carousel de categorías (fijo arriba) */}
-        <View className="px-2 pb-2">
-          <Text className="text-xl font-bold text-foreground mb-4">
+        {/* Carousel de categorías (fijo arriba, separado del ScrollView) */}
+        <View className="px-4 pt-2 pb-3" style={{ backgroundColor: colors.background }}>
+          <Text className="text-xl font-bold text-foreground mb-3">
             {profile.province
               ? `Categorías disponibles en ${profile.province}`
               : "Categorías disponibles"}
@@ -96,17 +108,18 @@ export default function HomeScreen() {
             <TipoSitioChipCarousel
               tipos={tiposDisponibles}
               selectedTipoId={selectedTipoId}
-              onSelectTipo={setSelectedTipoId}
+              onSelectTipo={handleSelectTipo}
             />
           )}
         </View>
 
-        {/* ScrollView debajo del carousel */}
+        {/* ScrollView separado con los items */}
         <ScrollView
           className="flex-1"
           contentContainerStyle={{
             flexGrow: 1,
-            paddingHorizontal: 6,
+            paddingHorizontal: 8,
+            paddingTop: 8,
             paddingBottom: 24,
           }}
           showsVerticalScrollIndicator={false}
