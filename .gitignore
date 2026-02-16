@@ -30,7 +30,8 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (no subir credenciales)
+.env
 .env*.local
 
 # typescript
@@ -41,3 +42,25 @@ app-example
 # generated native folders
 /ios
 /android
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs
+*.log
+
+# OS
+Thumbs.db
+
+# Build files
+*.tgz
+*.tar.gz
+.cache/
+
+# Webdev artifacts (checkpoint zips, migrations, etc.)
+.webdev/

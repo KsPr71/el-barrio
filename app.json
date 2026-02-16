@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "el-barrio",
-    "slug": "el-barrio",
+    "name": "por-el-barrio",
+    "slug": "por-el-barrio",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "elbarrio",
+    "scheme": "porelbarrio",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
