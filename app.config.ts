@@ -61,6 +61,10 @@ const config: ExpoConfig = {
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
+    // Google Maps (react-native-maps) – opcional; si no se usa, iOS usará Apple Maps
+    config: {
+      googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
+    },
   },
   android: {
     adaptiveIcon: {
@@ -73,6 +77,12 @@ const config: ExpoConfig = {
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
     permissions: ["POST_NOTIFICATIONS"],
+    // Google Maps (react-native-maps) – usa EXPO_PUBLIC_GOOGLE_MAPS_API_KEY en .env
+    config: {
+      googleMaps: {
+        apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
+      },
+    },
     intentFilters: [
       {
         action: "VIEW",

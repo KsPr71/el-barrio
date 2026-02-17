@@ -30,7 +30,8 @@ const ANIMATION_DURATION = 220;
 
 export default function HomeScreen() {
   const colors = useColors();
-  const { sitios, loading, error, refresh } = useSitiosRelevantes();
+  const { sitios, loading, loadingMore, error, refresh } =
+    useSitiosRelevantes();
   const { tipos } = useTiposSitio();
   const { profile, refresh: refreshProfile } = useProfile();
   const { provincias } = useLocations();
@@ -234,7 +235,7 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className="gap-8">
-            {loading ? (
+            {loading && sitiosPorProvincia.length === 0 ? (
               <View className="py-12 items-center">
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text className="text-sm mt-3 text-muted">
@@ -284,6 +285,16 @@ export default function HomeScreen() {
                   }
                 />
               ))
+            )}
+
+            {/* Indicador de carga incremental */}
+            {loadingMore && !loading && (
+              <View className="py-6 items-center">
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text className="text-xs mt-2 text-muted">
+                  Cargando más sitios...
+                </Text>
+              </View>
             )}
           </View>
         </Animated.ScrollView>

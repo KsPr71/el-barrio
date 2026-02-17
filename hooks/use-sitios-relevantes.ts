@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type SitioRelevante = {
   id: number;
@@ -32,36 +32,78 @@ function getErrorMessage(e: unknown, fallback: string): string {
 
 export function useSitiosRelevantes() {
   const [sitios, setSitios] = useState<SitioRelevante[]>([]);
+  // loading: carga inicial (primera página). loadingMore: carga incremental posterior.
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
+
+  const PAGE_SIZE = 25;
+
+  const fetchPage = useCallback(async (from: number, to: number) => {
+    const { data, error: err } = await supabase
+      .from("sitios_relevantes")
+      .select(
+        "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id",
+      )
+      .order("id", { ascending: true })
+      .range(from, to);
+    if (err) {
+      console.error("[useSitiosRelevantes] error:", err);
+      throw err;
+    }
+    return (data ?? []) as SitioRelevante[];
+  }, []);
 
   const fetchSitios = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
+    setLoadingMore(false);
     setError(null);
     try {
-      const { data, error: err } = await supabase
-        .from("sitios_relevantes")
-        .select(
-          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id"
-        )
-        .order("id", { ascending: true });
-      if (err) {
-        console.error("[useSitiosRelevantes] error:", err);
-        throw err;
-      }
-      setSitios((data ?? []) as SitioRelevante[]);
+      // 1) Cargar rápido la primera página para pintar la pantalla
+      const first = await fetchPage(0, PAGE_SIZE - 1);
+      if (requestIdRef.current !== requestId) return;
+      setSitios(first);
     } catch (e) {
       const msg = getErrorMessage(e, "Error al cargar sitios relevantes");
       setError(msg);
       setSitios([]);
     } finally {
-      setLoading(false);
+      if (requestIdRef.current === requestId) {
+        setLoading(false);
+      }
     }
-  }, []);
+
+    // 2) Cargar el resto en segundo plano (sin bloquear UI)
+    if (requestIdRef.current !== requestId) return;
+    setLoadingMore(true);
+    try {
+      let offset = PAGE_SIZE;
+      // Seguir mientras sigan llegando páginas completas
+      for (;;) {
+        if (requestIdRef.current !== requestId) return;
+        const page = await fetchPage(offset, offset + PAGE_SIZE - 1);
+        if (requestIdRef.current !== requestId) return;
+        if (page.length === 0) break;
+        setSitios((prev) => [...prev, ...page]);
+        if (page.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+      }
+    } catch (e) {
+      // Si falla la carga incremental, mantenemos lo ya cargado y solo mostramos el error.
+      const msg = getErrorMessage(e, "Error al cargar más sitios");
+      setError(msg);
+    } finally {
+      if (requestIdRef.current === requestId) {
+        setLoadingMore(false);
+      }
+    }
+  }, [fetchPage]);
 
   useEffect(() => {
     fetchSitios();
   }, [fetchSitios]);
 
-  return { sitios, loading, error, refresh: fetchSitios };
+  return { sitios, loading, loadingMore, error, refresh: fetchSitios };
 }

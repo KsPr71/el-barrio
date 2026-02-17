@@ -21,7 +21,8 @@ export function parseCoordenadas(localizacion: string): { lat: number; lng: numb
   return { lat, lng };
 }
 
-function buildMapsOpenUrl(localizacion: string): string {
+/** URL para abrir en Google Maps (solo enlace, no requiere API key). */
+function buildGoogleMapsUrl(localizacion: string): string {
   const coords = parseCoordenadas(localizacion);
   const q = coords
     ? `${coords.lat},${coords.lng}`
@@ -29,41 +30,22 @@ function buildMapsOpenUrl(localizacion: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
-function PlaceholderMapa({
-  localizacion,
-  openUrl,
-  height,
-}: {
-  localizacion: string;
-  openUrl: string;
-  height: number;
-}) {
+export function UbicacionMapa({ localizacion, height = 220 }: UbicacionMapaProps) {
   const colors = useColors();
+  const googleUrl = buildGoogleMapsUrl(localizacion);
   return (
     <View style={[styles.wrapper, { minHeight: height }]}>
-
       <TouchableOpacity
-        onPress={() => Linking.openURL(openUrl)}
+        onPress={() => Linking.openURL(googleUrl)}
         activeOpacity={0.8}
         className="mt-3 rounded-xl py-3 items-center"
         style={{ backgroundColor: colors.primary }}
       >
         <Text className="text-sm font-semibold" style={{ color: "#FFFFFF" }}>
-          Ver ubicación en Google Maps
+          Ver en Google Maps
         </Text>
       </TouchableOpacity>
     </View>
-  );
-}
-
-export function UbicacionMapa({ localizacion, height = 220 }: UbicacionMapaProps) {
-  const openUrl = buildMapsOpenUrl(localizacion);
-  return (
-    <PlaceholderMapa
-      localizacion={localizacion}
-      openUrl={openUrl}
-      height={height}
-    />
   );
 }
 
@@ -72,14 +54,5 @@ const styles = StyleSheet.create({
     width: "100%",
     overflow: "hidden",
     borderRadius: 12,
-  },
-  placeholder: {
-    width: "100%",
-    minHeight: 140,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 20,
   },
 });
