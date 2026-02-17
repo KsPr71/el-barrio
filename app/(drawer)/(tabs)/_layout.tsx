@@ -47,6 +47,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="colaboracion"
+        options={{
+          title: "Colaboración",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="hand.wave.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Perfil",

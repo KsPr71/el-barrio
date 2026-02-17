@@ -28,6 +28,7 @@ const MAPPING = {
   "star.fill": "star",
   "star.lefthalf.fill": "star-half",
   "person.fill": "person",
+  "hand.wave.fill": "handshake",
 } as IconMapping;
 
 /**

@@ -1,14 +1,16 @@
-import { ScreenContainer } from "@/components/screen-container";
-import { UbicacionMapa } from "@/components/ubicacion-mapa";
 import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
 import { FormularioOpinion } from "@/components/formulario-opinion";
+import { ScreenContainer } from "@/components/screen-container";
+import { UbicacionMapa } from "@/components/ubicacion-mapa";
 import { Collapsible } from "@/components/ui/collapsible";
+import { TipoSitioChip } from "@/components/ui/tipo-sitio";
 import { useColors } from "@/hooks/use-colors";
-import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useOpiniones } from "@/hooks/use-opiniones";
+import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
+import { useTiposSitio } from "@/hooks/use-tipos-sitio";
 import { supabase } from "@/lib/supabase";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -40,8 +42,13 @@ export default function DetallesScreen() {
   // Usamos el ID de la ruta para cargar opiniones, independientemente de si ya cargamos el sitio
   const sitioId =
     id && !Number.isNaN(parseInt(id, 10)) ? parseInt(id, 10) : null;
-  const { opiniones, stats, crearOpinion, refresh: refreshOpiniones } =
-    useOpiniones(sitioId);
+  const {
+    opiniones,
+    stats,
+    crearOpinion,
+    refresh: refreshOpiniones,
+  } = useOpiniones(sitioId);
+  const { tipos } = useTiposSitio();
 
   const fetchSitio = useCallback(async (sitioId: string) => {
     setLoading(true);
@@ -52,7 +59,7 @@ export default function DetallesScreen() {
       const { data, error: err } = await supabase
         .from("sitios_relevantes")
         .select(
-          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id"
+          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id",
         )
         .eq("id", numId)
         .single();
@@ -110,6 +117,10 @@ export default function DetallesScreen() {
   }
 
   const imagenUrl = getFirstImageUrl(sitio.imagenes);
+  const tipoSitio =
+    sitio.tipo_sitio_id != null
+      ? tipos.find((t) => t.id === sitio.tipo_sitio_id)
+      : null;
 
   return (
     <ScreenContainer className="flex-1">
@@ -125,146 +136,165 @@ export default function DetallesScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-        {imagenUrl ? (
-          <Image
-            source={{ uri: imagenUrl }}
-            style={{
-              width: "100%",
-              height: 220,
-              backgroundColor: colors.border,
-            }}
-            contentFit="cover"
-          />
-        ) : (
-          <View
-            className="w-full items-center justify-center"
-            style={{
-              height: 160,
-              backgroundColor: colors.border,
-            }}
-          >
-            <Text className="text-5xl">📍</Text>
-          </View>
-        )}
+          {imagenUrl ? (
+            <Image
+              source={{ uri: imagenUrl }}
+              style={{
+                width: "100%",
+                height: 220,
+                backgroundColor: colors.border,
+              }}
+              contentFit="cover"
+            />
+          ) : (
+            <View
+              className="w-full items-center justify-center"
+              style={{
+                height: 160,
+                backgroundColor: colors.border,
+              }}
+            >
+              <Text className="text-5xl">📍</Text>
+            </View>
+          )}
 
-        <View className="p-5 gap-4">
-          <View>
-            <Text className="text-2xl font-bold text-foreground">{sitio.nombre}</Text>
-            {stats.total > 0 && (
+          <View className="p-5 gap-4">
+            <View>
+              <Text className="text-2xl font-bold text-foreground">
+                {sitio.nombre}
+              </Text>
+              {tipoSitio && (
+                <View className="mt-2">
+                  <TipoSitioChip tipo={tipoSitio} />
+                </View>
+              )}
+              {stats.total > 0 && (
+                <View className="mt-2">
+                  <EstrellasPuntuacion
+                    promedio={stats.promedio}
+                    total={stats.total}
+                    size={20}
+                    showNumber
+                    showTotal
+                  />
+                </View>
+              )}
+            </View>
+
+            {sitio.descripcion ? (
+              <Text className="text-base text-foreground leading-6">
+                {sitio.descripcion}
+              </Text>
+            ) : null}
+
+            {sitio.direccion ? (
+              <View>
+                <Text className="text-xs text-muted mb-1">Dirección</Text>
+                <Text className="text-base text-foreground">
+                  📍 {sitio.direccion}
+                </Text>
+              </View>
+            ) : null}
+
+            {sitio.telefono != null && sitio.telefono !== 0 ? (
+              <View>
+                <Text className="text-xs text-muted mb-1">Teléfono</Text>
+                <Text className="text-base text-foreground">
+                  📞 {sitio.telefono}
+                </Text>
+              </View>
+            ) : null}
+
+            {sitio.ofertas ? (
+              <View
+                className="rounded-xl p-4"
+                style={{ backgroundColor: colors.surface }}
+              >
+                <Text className="text-xs text-muted mb-1">Ofertas</Text>
+                <Text className="text-base text-foreground">
+                  {sitio.ofertas}
+                </Text>
+              </View>
+            ) : null}
+
+            {sitio.localizacion ? (
               <View className="mt-2">
-                <EstrellasPuntuacion
-                  promedio={stats.promedio}
-                  total={stats.total}
-                  size={20}
-                  showNumber
-                  showTotal
-                />
+                <Text className="text-base font-semibold text-foreground mb-2">
+                  Ubicación
+                </Text>
+                <UbicacionMapa localizacion={sitio.localizacion} />
+              </View>
+            ) : null}
+
+            {/* Sección de Opiniones de Clientes */}
+            {opiniones.length > 0 && (
+              <View className="mt-4">
+                <Text className="text-lg font-semibold text-foreground mb-3">
+                  Opiniones de Clientes ({opiniones.length})
+                </Text>
+                <ScrollView
+                  style={{ maxHeight: 400 }}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator={true}
+                >
+                  <View className="gap-4">
+                    {opiniones.map((opinion) => (
+                      <View
+                        key={opinion.id}
+                        className="rounded-xl p-4"
+                        style={{ backgroundColor: colors.surface }}
+                      >
+                        <View className="flex-row items-center justify-between mb-2">
+                          <EstrellasPuntuacion
+                            promedio={opinion.calificacion}
+                            size={16}
+                          />
+                          {opinion.autor_texto && (
+                            <Text className="text-sm font-medium text-foreground">
+                              {opinion.autor_texto}
+                            </Text>
+                          )}
+                        </View>
+                        {opinion.comentario && (
+                          <Text className="text-sm text-foreground mt-2 leading-5">
+                            {opinion.comentario}
+                          </Text>
+                        )}
+                        <Text className="text-xs text-muted mt-2">
+                          {new Date(opinion.creado_at).toLocaleDateString(
+                            "es-ES",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            },
+                          )}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Formulario para escribir opinión - dentro de accordion */}
+            {sitioId && (
+              <View className="mt-4">
+                <Collapsible title="Escribe tu opinión">
+                  <FormularioOpinion
+                    sitioId={sitioId}
+                    onCreateOpinion={crearOpinion}
+                    onSuccess={() => {
+                      refreshOpiniones();
+                      // Marcar que se necesita refrescar los sitios en index
+                      // Esto se manejará con useFocusEffect en index.tsx
+                    }}
+                  />
+                </Collapsible>
               </View>
             )}
           </View>
-
-          {sitio.descripcion ? (
-            <Text className="text-base text-foreground leading-6">
-              {sitio.descripcion}
-            </Text>
-          ) : null}
-
-          {sitio.direccion ? (
-            <View>
-              <Text className="text-xs text-muted mb-1">Dirección</Text>
-              <Text className="text-base text-foreground">📍 {sitio.direccion}</Text>
-            </View>
-          ) : null}
-
-          {sitio.telefono != null && sitio.telefono !== 0 ? (
-            <View>
-              <Text className="text-xs text-muted mb-1">Teléfono</Text>
-              <Text className="text-base text-foreground">📞 {sitio.telefono}</Text>
-            </View>
-          ) : null}
-
-          {sitio.ofertas ? (
-            <View className="rounded-xl p-4" style={{ backgroundColor: colors.surface }}>
-              <Text className="text-xs text-muted mb-1">Ofertas</Text>
-              <Text className="text-base text-foreground">{sitio.ofertas}</Text>
-            </View>
-          ) : null}
-
-          {sitio.localizacion ? (
-            <View className="mt-2">
-              <Text className="text-base font-semibold text-foreground mb-2">
-                Ubicación
-              </Text>
-              <UbicacionMapa localizacion={sitio.localizacion} />
-            </View>
-          ) : null}
-
-          {/* Sección de Opiniones de Clientes */}
-          {opiniones.length > 0 && (
-            <View className="mt-4">
-              <Text className="text-lg font-semibold text-foreground mb-3">
-                Opiniones de Clientes ({opiniones.length})
-              </Text>
-              <ScrollView
-                style={{ maxHeight: 400 }}
-                nestedScrollEnabled
-                showsVerticalScrollIndicator={true}
-              >
-                <View className="gap-4">
-                  {opiniones.map((opinion) => (
-                    <View
-                      key={opinion.id}
-                      className="rounded-xl p-4"
-                      style={{ backgroundColor: colors.surface }}
-                    >
-                      <View className="flex-row items-center justify-between mb-2">
-                        <EstrellasPuntuacion
-                          promedio={opinion.calificacion}
-                          size={16}
-                        />
-                        {opinion.autor_texto && (
-                          <Text className="text-sm font-medium text-foreground">
-                            {opinion.autor_texto}
-                          </Text>
-                        )}
-                      </View>
-                      {opinion.comentario && (
-                        <Text className="text-sm text-foreground mt-2 leading-5">
-                          {opinion.comentario}
-                        </Text>
-                      )}
-                      <Text className="text-xs text-muted mt-2">
-                        {new Date(opinion.creado_at).toLocaleDateString("es-ES", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Formulario para escribir opinión - dentro de accordion */}
-          {sitioId && (
-            <View className="mt-4">
-              <Collapsible title="Escribe tu opinión">
-                <FormularioOpinion
-                  sitioId={sitioId}
-                  onCreateOpinion={crearOpinion}
-                  onSuccess={() => {
-                    refreshOpiniones();
-                    // Marcar que se necesita refrescar los sitios en index
-                    // Esto se manejará con useFocusEffect en index.tsx
-                  }}
-                />
-              </Collapsible>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+        </ScrollView>
       </KeyboardAvoidingView>
     </ScreenContainer>
   );

@@ -1,7 +1,9 @@
-import { useColors } from "@/hooks/use-colors";
-import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
+import { TipoSitioChip } from "@/components/ui/tipo-sitio";
+import { useColors } from "@/hooks/use-colors";
 import { useOpiniones } from "@/hooks/use-opiniones";
+import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
+import { useTiposSitio } from "@/hooks/use-tipos-sitio";
 import { Image } from "expo-image";
 import { Text, TouchableOpacity, View } from "react-native";
 
@@ -19,16 +21,30 @@ function getFirstImageUrl(imagenes: string | null): string | null {
     : null;
 }
 
-export function SitioRelevanteCard({ sitio, onPress }: SitioRelevanteCardProps) {
+export function SitioRelevanteCard({
+  sitio,
+  onPress,
+}: SitioRelevanteCardProps) {
   const colors = useColors();
+  const { tipos } = useTiposSitio();
   const imagenUrl = getFirstImageUrl(sitio.imagenes);
   const { stats } = useOpiniones(sitio.id);
 
+  const tipoSitio =
+    sitio.tipo_sitio_id != null
+      ? tipos.find((t) => t.id === sitio.tipo_sitio_id)
+      : null;
+
   const content = (
     <View
-        className="rounded-2xl overflow-hidden border border-border"
-        style={{ backgroundColor: colors.surface }}
-      >
+      className="rounded-2xl overflow-hidden border border-border"
+      style={{
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+        borderWidth: 1,
+      }}
+    >
+      <View style={{ position: "relative" }}>
         {imagenUrl ? (
           <Image
             source={{ uri: imagenUrl }}
@@ -50,47 +66,42 @@ export function SitioRelevanteCard({ sitio, onPress }: SitioRelevanteCardProps) 
             <Text className="text-4xl">📍</Text>
           </View>
         )}
-        <View className="p-4">
-          <Text className="text-lg font-bold text-foreground" numberOfLines={2}>
-            {sitio.nombre}
-          </Text>
-
-          {stats.total > 0 && (
-            <View className="mt-2">
-              <EstrellasPuntuacion
-                promedio={stats.promedio}
-                total={stats.total}
-                size={14}
-                showNumber
-                showTotal
-              />
-            </View>
-          )}
-
-          {sitio.descripcion ? (
-            <Text
-              className="text-sm text-muted mt-1 leading-5"
-              numberOfLines={3}
-            >
-              {sitio.descripcion}
-            </Text>
-          ) : null}
-          {sitio.direccion ? (
-            <Text className="text-xs text-muted mt-2" numberOfLines={2}>
-              📍 {sitio.direccion}
-            </Text>
-          ) : null}
-        </View>
+        {tipoSitio && <TipoSitioChip tipo={tipoSitio} overlay />}
       </View>
+      <View className="p-4">
+        <Text className="text-lg font-bold text-foreground" numberOfLines={2}>
+          {sitio.nombre}
+        </Text>
+
+        {stats.total > 0 && (
+          <View className="mt-2">
+            <EstrellasPuntuacion
+              promedio={stats.promedio}
+              total={stats.total}
+              size={14}
+              showNumber
+              showTotal
+            />
+          </View>
+        )}
+
+        {sitio.descripcion ? (
+          <Text className="text-sm text-muted mt-1 leading-5" numberOfLines={3}>
+            {sitio.descripcion}
+          </Text>
+        ) : null}
+        {sitio.direccion ? (
+          <Text className="text-xs text-muted mt-2" numberOfLines={2}>
+            📍 {sitio.direccion}
+          </Text>
+        ) : null}
+      </View>
+    </View>
   );
 
   if (onPress) {
     return (
-      <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={0.9}
-        className="mb-4"
-      >
+      <TouchableOpacity onPress={onPress} activeOpacity={0.9} className="mb-4">
         {content}
       </TouchableOpacity>
     );
