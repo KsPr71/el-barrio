@@ -1,9 +1,11 @@
 import { IconImage } from "@/components/ui/icon-image";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useHeaderCategory } from "@/contexts/header-category-context";
 import { useColors } from "@/hooks/use-colors";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { router, usePathname } from "expo-router";
 import { Drawer } from "expo-router/drawer";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   Linking,
@@ -12,6 +14,121 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+
+function HeaderRightWithChip() {
+  const colors = useColors();
+  const pathname = usePathname();
+  const { chipVisible, categoryLabel } = useHeaderCategory();
+  const isOtherTab =
+    pathname.includes("/detalles") ||
+    pathname.includes("/profile") ||
+    pathname.includes("/colaboracion");
+  const showChip = Boolean(chipVisible && categoryLabel && !isOtherTab);
+
+  // Animación tipo "Dynamic Island": width 0 <-> width real (medida)
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const islandWidth = useSharedValue(0);
+  const islandOpacity = useSharedValue(0);
+  const islandMarginRight = useSharedValue(0);
+
+  const handleMeasure = useCallback((w: number) => {
+    if (!Number.isFinite(w) || w <= 0) return;
+    setMeasuredWidth(w);
+  }, []);
+
+  // Para evitar re-mediciones innecesarias cuando cambia la categoría
+  const categoryKey = useMemo(() => categoryLabel ?? "", [categoryLabel]);
+
+  useEffect(() => {
+    // Si no hay label, ocultar completamente
+    if (!categoryLabel) {
+      islandWidth.value = withTiming(0, { duration: 350 });
+      islandMarginRight.value = withTiming(0, { duration: 350 });
+      islandOpacity.value = withTiming(0, { duration: 450 });
+      return;
+    }
+
+    // Esperar a tener un ancho medido antes de animar
+    if (measuredWidth > 0) {
+      if (showChip) {
+        // Entrada: expandir suavemente
+        islandMarginRight.value = withSpring(10, {
+          damping: 18,
+          stiffness: 180,
+        });
+        islandOpacity.value = withTiming(1, { duration: 180 });
+        islandWidth.value = withSpring(measuredWidth, {
+          damping: 18,
+          stiffness: 180,
+        });
+      } else {
+        // Salida: colapsar suavemente
+        islandWidth.value = withTiming(0, { duration: 350 });
+        islandMarginRight.value = withTiming(0, { duration: 350 });
+        islandOpacity.value = withTiming(0, { duration: 450 });
+      }
+    }
+  }, [
+    categoryLabel,
+    showChip,
+    measuredWidth,
+    islandMarginRight,
+    islandOpacity,
+    islandWidth,
+  ]);
+
+  const islandAnimatedStyle = useAnimatedStyle(() => ({
+    width: islandWidth.value,
+    opacity: islandOpacity.value,
+    marginRight: islandMarginRight.value,
+  }));
+
+  return (
+    <View style={styles.headerRight}>
+      {/* Medidor invisible para calcular el ancho real del chip */}
+      {categoryLabel ? (
+        <View
+          key={`measure-${categoryKey}`}
+          style={styles.headerChipMeasure}
+          onLayout={(e) => handleMeasure(e.nativeEvent.layout.width)}
+        >
+          <View style={styles.headerChipInner}>
+            <Text style={styles.headerChipText} numberOfLines={1}>
+              {categoryLabel}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Chip animado (Dynamic Island) - siempre montado cuando hay categoryLabel */}
+      {categoryLabel ? (
+        <Animated.View
+          style={[
+            styles.headerChipIsland,
+            islandAnimatedStyle,
+            { backgroundColor: colors.secondary ?? "#FBBF24" },
+          ]}
+        >
+          <View style={styles.headerChipInner}>
+            <Text style={styles.headerChipText} numberOfLines={1}>
+              {categoryLabel}
+            </Text>
+          </View>
+        </Animated.View>
+      ) : null}
+      <IconImage
+        source={require("@/assets/images/icon.png")}
+        style={styles.headerIcon}
+      />
+    </View>
+  );
+}
 
 function CustomDrawerContent(props: any) {
   const colors = useColors();
@@ -54,11 +171,11 @@ function CustomDrawerContent(props: any) {
         >
           <IconImage source={require("@/assets/images/icon.png")} />
           <View>
-            <Text style={[styles.drawerTitle, { color: "#FFFFFF" }]}>
+            <Text style={[styles.drawerTitle, { color: colors.secondary }]}>
               Por el Barrio
             </Text>
             <Text style={[styles.drawerSubtitle, { color: "#FFFFFF" }]}>
-              Menú Principal
+              Descubre las mejores opciones
             </Text>
           </View>
         </View>
@@ -222,7 +339,15 @@ function CustomDrawerContent(props: any) {
 
 export default function DrawerLayout() {
   const colors = useColors();
+  const { categoryLabel } = useHeaderCategory();
 
+  // Memoizar el headerRight para que solo se refresque cuando cambie la categoría
+  const headerRightComponent = useMemo(
+    () => <HeaderRightWithChip />,
+    [categoryLabel], // Solo refrescar cuando cambie la categoría
+  );
+
+  // Aqui se configura el header del drawer
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -237,19 +362,14 @@ export default function DrawerLayout() {
           backgroundColor: colors.primary,
           borderBottomColor: "#FBBF24",
           borderBottomWidth: 3,
+          height: 110,
+          paddingBottom: 10,
         },
         headerTintColor: "#FFFFFF",
         headerTitleStyle: {
           fontWeight: "bold",
         },
-        headerRight: () => (
-          <View style={styles.headerRight}>
-            <IconImage
-              source={require("@/assets/images/icon.png")}
-              style={styles.headerIcon}
-            />
-          </View>
-        ),
+        headerRight: () => headerRightComponent,
       }}
     >
       <IconImage
@@ -281,8 +401,29 @@ export default function DrawerLayout() {
 
 const styles = StyleSheet.create({
   headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     marginRight: 16,
-    justifyContent: "center",
+  },
+  headerChipIsland: {
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  headerChipInner: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  headerChipMeasure: {
+    position: "absolute",
+    left: -1000,
+    top: -1000,
+    opacity: 0,
+  },
+  headerChipText: {
+    color: "#000000",
+    fontSize: 13,
+    fontWeight: "600",
   },
   headerIcon: {
     width: 60,
