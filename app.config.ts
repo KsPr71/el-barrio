@@ -48,7 +48,7 @@ const env = {
 
 const config: ExpoConfig = {
   name: env.appName,
-  slug: env.appSlug,
+  slug: "por-el-barrio",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -137,7 +137,12 @@ const config: ExpoConfig = {
   extra: {
     supabaseUrl: env.supabaseUrl,
     supabaseKey: env.supabaseKey,
+    eas: {
+      projectId: "bc941bc0-5add-4c40-a3fe-73c9c8bc8866",
+    },
   },
+
+  owner: "kind-dev",
 };
 
 export default config;
