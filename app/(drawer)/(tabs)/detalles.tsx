@@ -22,6 +22,13 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedRef,
+  useAnimatedStyle,
+  useScrollOffset,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function getFirstImageUrl(imagenes: string | null): string | null {
@@ -51,6 +58,21 @@ export default function DetallesScreen() {
     refresh: refreshOpiniones,
   } = useOpiniones(sitioId);
   const { tipos } = useTiposSitio();
+
+  const IMAGE_HEIGHT_FULL = 320;
+  const IMAGE_HEIGHT_COLLAPSED = 220;
+  const SCROLL_RANGE = IMAGE_HEIGHT_FULL - IMAGE_HEIGHT_COLLAPSED;
+
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollOffset = useScrollOffset(scrollRef);
+  const imageContainerStyle = useAnimatedStyle(() => ({
+    height: interpolate(
+      scrollOffset.value,
+      [0, SCROLL_RANGE],
+      [IMAGE_HEIGHT_FULL, IMAGE_HEIGHT_COLLAPSED],
+      Extrapolation.CLAMP,
+    ),
+  }));
 
   const fetchSitio = useCallback(async (sitioId: string) => {
     setLoading(true);
@@ -131,34 +153,44 @@ export default function DetallesScreen() {
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <ScrollView
+        <Animated.ScrollView
+          ref={scrollRef}
           contentContainerStyle={{
             paddingBottom: Math.max(24, insets.bottom + 16),
           }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          scrollEventThrottle={16}
         >
-          {imagenUrl ? (
-            <Image
-              source={{ uri: imagenUrl }}
-              style={{
+          <Animated.View
+            style={[
+              {
                 width: "100%",
-                height: 220,
+                overflow: "hidden",
                 backgroundColor: colors.border,
-              }}
-              contentFit="cover"
-            />
-          ) : (
-            <View
-              className="w-full items-center justify-center"
-              style={{
-                height: 160,
-                backgroundColor: colors.border,
-              }}
-            >
-              <Text className="text-5xl">📍</Text>
-            </View>
-          )}
+              },
+              imageContainerStyle,
+            ]}
+          >
+            {imagenUrl ? (
+              <Image
+                source={{ uri: imagenUrl }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: colors.border,
+                }}
+                contentFit="cover"
+              />
+            ) : (
+              <View
+                className="w-full flex-1 items-center justify-center"
+                style={{ backgroundColor: colors.border }}
+              >
+                <Text className="text-5xl">📍</Text>
+              </View>
+            )}
+          </Animated.View>
 
           <View className="p-5 gap-4">
             <View className="flex-row items-center justify-between gap-3">
@@ -303,7 +335,7 @@ export default function DetallesScreen() {
               </View>
             )}
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       </KeyboardAvoidingView>
     </ScreenContainer>
   );
