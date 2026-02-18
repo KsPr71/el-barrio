@@ -1,6 +1,7 @@
 import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
 import { FormularioOpinion } from "@/components/formulario-opinion";
 import { ImageCarousel } from "@/components/image-carousel";
+import Maps from "@/components/maps";
 import { ScreenContainer } from "@/components/screen-container";
 import { Separador } from "@/components/separador";
 import { buildGoogleMapsUrl } from "@/components/ubicacion-mapa";
@@ -18,6 +19,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -61,6 +63,7 @@ export default function DetallesScreen() {
     refresh: refreshOpiniones,
   } = useOpiniones(sitioId);
   const { tipos } = useTiposSitio();
+  const [mapReloadKey, setMapReloadKey] = useState(0);
 
   const IMAGE_HEIGHT_FULL = 320;
   const IMAGE_HEIGHT_COLLAPSED = 220;
@@ -331,64 +334,102 @@ export default function DetallesScreen() {
             ) : null}
 
             {sitio.localizacion ? (
-              <View
-                className="rounded-2xl overflow-hidden"
-                style={{
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <View className="flex-row items-stretch p-4 gap-4">
-                  <View className="flex-1 gap-1 min-w-0">
-                    <View className="flex-row items-center gap-2">
-                      <View
-                        className="rounded-full p-2"
-                        style={{ backgroundColor: colors.primary + "20" }}
-                      >
-                        <IconSymbol
-                          name="location.fill"
-                          size={20}
-                          color={colors.primary}
-                        />
+              <View className="mt-2 gap-3">
+                <View
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <View className="flex-row items-stretch p-4 gap-4">
+                    <View className="flex-1 gap-1 min-w-0">
+                      <View className="flex-row items-center gap-2">
+                        <View
+                          className="rounded-full p-2"
+                          style={{ backgroundColor: colors.primary + "20" }}
+                        >
+                          <IconSymbol
+                            name="location.fill"
+                            size={20}
+                            color={colors.primary}
+                          />
+                        </View>
+                        <Text className="text-xs text-muted font-medium uppercase tracking-wide">
+                          Ubicación
+                        </Text>
                       </View>
-                      <Text className="text-xs text-muted font-medium uppercase tracking-wide">
-                        Ubicación
-                      </Text>
+                      {sitio.direccion ? (
+                        <Text
+                          className="text-base text-foreground mt-1"
+                          numberOfLines={3}
+                        >
+                          {sitio.direccion}
+                        </Text>
+                      ) : (
+                        <Text className="text-sm text-muted mt-1">
+                          Ver en mapa
+                        </Text>
+                      )}
                     </View>
-                    {sitio.direccion ? (
-                      <Text
-                        className="text-base text-foreground mt-1"
-                        numberOfLines={3}
-                      >
-                        {sitio.direccion}
-                      </Text>
-                    ) : (
-                      <Text className="text-sm text-muted mt-1">
-                        Ver en mapa
-                      </Text>
-                    )}
                   </View>
+                </View>
+
+                <View className="flex-row items-center justify-between gap-3 px-1">
                   <TouchableOpacity
                     onPress={() =>
-                      Linking.openURL(buildGoogleMapsUrl(sitio.localizacion))
+                      Alert.alert(
+                        "Aviso",
+                        "Algunas funcionalidades de Google Maps pueden no estar disponibles. Abra Google Maps si desea más información.",
+                      )
                     }
                     activeOpacity={0.7}
-                    className="justify-center rounded-xl px-4"
-                    style={{
-                      backgroundColor: colors.primary,
-                      height: 40,
-                      marginTop: 50,
-                    }}
+                    className="flex-row items-center gap-1"
                   >
-                    <Text
-                      className="text-sm font-semibold"
-                      style={{ color: "#FFFFFF" }}
-                    >
-                      Google Maps
-                    </Text>
+                    <IconSymbol
+                      name="exclamationmark.triangle.fill"
+                      size={18}
+                      color={colors.primary}
+                    />
                   </TouchableOpacity>
+                  <View className="flex-row items-center gap-2">
+                    <TouchableOpacity
+                      onPress={() =>
+                        Linking.openURL(buildGoogleMapsUrl(sitio.localizacion))
+                      }
+                      activeOpacity={0.7}
+                      className="rounded-lg px-3 py-2"
+                      style={{ backgroundColor: colors.primary }}
+                    >
+                      <Text
+                        className="text-[11px] font-semibold"
+                        style={{ color: "#FFFFFF" }}
+                      >
+                        Google Maps
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setMapReloadKey((k) => k + 1)}
+                      activeOpacity={0.7}
+                      className="rounded-lg px-3 py-2 border"
+                      style={{ borderColor: colors.border }}
+                    >
+                      <Text
+                        className="text-[11px]"
+                        style={{ color: colors.muted }}
+                      >
+                        Resetear mapa
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
+
+                <Maps
+                  key={mapReloadKey}
+                  uri={sitio.localizacion}
+                  height={380}
+                />
               </View>
             ) : null}
 

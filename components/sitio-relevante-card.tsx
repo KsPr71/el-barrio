@@ -6,7 +6,8 @@ import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
 import { Image } from "expo-image";
 import { Text, TouchableOpacity, View } from "react-native";
-
+import { Separador } from "./separador";
+import { IconSymbol } from "./ui/icon-symbol";
 export interface SitioRelevanteCardProps {
   sitio: SitioRelevante;
   onPress?: () => void;
@@ -90,10 +91,34 @@ export function SitioRelevanteCard({
             {sitio.descripcion}
           </Text>
         ) : null}
+        <Separador />
         {sitio.direccion ? (
-          <Text className="text-xs text-muted mt-2" numberOfLines={2}>
-            📍 {sitio.direccion}
-          </Text>
+          <View className="mt-2 gap-1 flex-row items-center">
+            <View
+              className="flex-row items-center gap-2"
+              style={{
+                backgroundColor: colors.primary + "20",
+                padding: 2,
+                borderRadius: 30,
+              }}
+            >
+              <IconSymbol
+                name="location.fill"
+                size={20}
+                color={colors.primary}
+              />
+            </View>
+            <Text
+              className="text-xs text-muted ml-2"
+              style={{
+                paddingHorizontal: 4,
+                fontStyle: "italic",
+              }}
+              numberOfLines={2}
+            >
+              {sitio.direccion}
+            </Text>
+          </View>
         ) : null}
       </View>
     </View>
