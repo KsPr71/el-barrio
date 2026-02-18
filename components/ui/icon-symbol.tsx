@@ -29,6 +29,15 @@ const MAPPING = {
   "star.lefthalf.fill": "star-half",
   "person.fill": "person",
   "hand.wave.fill": "handshake",
+  "phone.fill": "phone",
+  "phone.bubble": "contact-phone",
+  "phone.circle": "contact-phone",
+  "phone.down.circle.fill": "contact-phone",
+  "location.fill": "location-on",
+  "location.circle.fill": "location-on",
+  "message.fill": "message",
+  "bubble.left.fill": "message",
+  "document.fill": "description",
 } as IconMapping;
 
 /**

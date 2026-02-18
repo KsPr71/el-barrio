@@ -22,7 +22,7 @@ export function parseCoordenadas(localizacion: string): { lat: number; lng: numb
 }
 
 /** URL para abrir en Google Maps (solo enlace, no requiere API key). */
-function buildGoogleMapsUrl(localizacion: string): string {
+export function buildGoogleMapsUrl(localizacion: string): string {
   const coords = parseCoordenadas(localizacion);
   const q = coords
     ? `${coords.lat},${coords.lng}`

@@ -3,8 +3,9 @@ import { FormularioOpinion } from "@/components/formulario-opinion";
 import { ImageCarousel } from "@/components/image-carousel";
 import { ScreenContainer } from "@/components/screen-container";
 import { Separador } from "@/components/separador";
-import { UbicacionMapa } from "@/components/ubicacion-mapa";
+import { buildGoogleMapsUrl } from "@/components/ubicacion-mapa";
 import { Collapsible } from "@/components/ui/collapsible";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { TipoSitioChip } from "@/components/ui/tipo-sitio";
 import { useColors } from "@/hooks/use-colors";
 import { useOpiniones } from "@/hooks/use-opiniones";
@@ -12,6 +13,7 @@ import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
 import { supabase } from "@/lib/supabase";
 import { Image } from "expo-image";
+import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -20,6 +22,7 @@ import {
   Platform,
   ScrollView,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import Animated, {
@@ -155,6 +158,7 @@ export default function DetallesScreen() {
       >
         <Animated.ScrollView
           ref={scrollRef}
+          stickyHeaderIndices={[1]}
           contentContainerStyle={{
             paddingBottom: Math.max(24, insets.bottom + 16),
           }}
@@ -177,22 +181,29 @@ export default function DetallesScreen() {
                 source={{ uri: imagenUrl }}
                 style={{
                   width: "100%",
-                  height: "100%",
+                  height: IMAGE_HEIGHT_FULL,
                   backgroundColor: colors.border,
                 }}
                 contentFit="cover"
               />
             ) : (
               <View
-                className="w-full flex-1 items-center justify-center"
-                style={{ backgroundColor: colors.border }}
+                className="w-full items-center justify-center"
+                style={{
+                  width: "100%",
+                  height: IMAGE_HEIGHT_FULL,
+                  backgroundColor: colors.border,
+                }}
               >
                 <Text className="text-5xl">📍</Text>
               </View>
             )}
           </Animated.View>
 
-          <View className="p-5 gap-4">
+          <View
+            className="px-5 py-4"
+            style={{ backgroundColor: colors.background }}
+          >
             <View className="flex-row items-center justify-between gap-3">
               <View className="flex-1 shrink gap-2">
                 <Text className="text-2xl font-bold text-foreground">
@@ -210,9 +221,10 @@ export default function DetallesScreen() {
                 />
               )}
             </View>
-
             <Separador />
+          </View>
 
+          <View className="p-5 gap-4">
             {sitio.imagenes ? (
               <View className="px-5 pt-2 flex-col items-start justify-start">
                 <Text className="text-xs text-foreground mb-1">
@@ -239,32 +251,147 @@ export default function DetallesScreen() {
                 </Text>
               </View>
             ) : null}
-
-            {sitio.localizacion ? (
-              <View className="mt-2">
-                <Text className="text-base font-semibold text-foreground mb-2">
-                  Ubicación
+            {sitio.telefono ? (
+              <View
+                className="rounded-2xl p-4"
+                style={{
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <Text className="text-xs text-muted mb-3 font-medium uppercase tracking-wide">
+                  Contactar
                 </Text>
-
-                {sitio.direccion ? (
-                  <View
-                    style={{
-                      borderColor: colors.border,
-                      borderWidth: 1,
-                      borderRadius: 10,
-                      padding: 10,
-                      backgroundColor: colors.surface,
-                    }}
+                <View className="gap-3">
+                  <TouchableOpacity
+                    onPress={() =>
+                      Linking.openURL(
+                        `tel:${String(sitio.telefono).replace(/\D/g, "")}`,
+                      )
+                    }
+                    activeOpacity={0.7}
+                    className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                    style={{ backgroundColor: colors.background }}
                   >
-                    <Text className="text-xs text-muted mb-1">Dirección</Text>
-                    <Text className="text-base text-foreground">
-                      📍 {sitio.direccion}
-                    </Text>
-                  </View>
-                ) : null}
-                <UbicacionMapa localizacion={sitio.localizacion} />
+                    <View
+                      className="rounded-full p-2"
+                      style={{ backgroundColor: colors.primary + "20" }}
+                    >
+                      <IconSymbol
+                        name="phone.fill"
+                        size={22}
+                        color={colors.primary}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-xs text-muted">Teléfono</Text>
+                      <Text
+                        className="text-base font-semibold"
+                        style={{ color: colors.foreground }}
+                      >
+                        {sitio.telefono}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const num = String(sitio.telefono).replace(/\D/g, "");
+                      const whatsappNum = num.startsWith("53")
+                        ? num
+                        : `53${num}`;
+                      Linking.openURL(`https://wa.me/${whatsappNum}`);
+                    }}
+                    activeOpacity={0.7}
+                    className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                    style={{ backgroundColor: colors.background }}
+                  >
+                    <View
+                      className="rounded-full p-2"
+                      style={{ backgroundColor: "#25D36620" }}
+                    >
+                      <IconSymbol
+                        name="message.fill"
+                        size={22}
+                        color="#25D366"
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-xs text-muted">WhatsApp</Text>
+                      <Text
+                        className="text-base font-semibold"
+                        style={{ color: "#25D366" }}
+                      >
+                        Enviar mensaje
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : null}
+
+            {sitio.localizacion ? (
+              <View
+                className="rounded-2xl overflow-hidden"
+                style={{
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <View className="flex-row items-stretch p-4 gap-4">
+                  <View className="flex-1 gap-1 min-w-0">
+                    <View className="flex-row items-center gap-2">
+                      <View
+                        className="rounded-full p-2"
+                        style={{ backgroundColor: colors.primary + "20" }}
+                      >
+                        <IconSymbol
+                          name="location.fill"
+                          size={20}
+                          color={colors.primary}
+                        />
+                      </View>
+                      <Text className="text-xs text-muted font-medium uppercase tracking-wide">
+                        Ubicación
+                      </Text>
+                    </View>
+                    {sitio.direccion ? (
+                      <Text
+                        className="text-base text-foreground mt-1"
+                        numberOfLines={3}
+                      >
+                        {sitio.direccion}
+                      </Text>
+                    ) : (
+                      <Text className="text-sm text-muted mt-1">
+                        Ver en mapa
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      Linking.openURL(buildGoogleMapsUrl(sitio.localizacion))
+                    }
+                    activeOpacity={0.7}
+                    className="justify-center rounded-xl px-4"
+                    style={{
+                      backgroundColor: colors.primary,
+                      height: 40,
+                      marginTop: 50,
+                    }}
+                  >
+                    <Text
+                      className="text-sm font-semibold"
+                      style={{ color: "#FFFFFF" }}
+                    >
+                      Google Maps
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+
             <Separador />
 
             {/* Sección de Opiniones de Clientes */}
@@ -278,7 +405,14 @@ export default function DetallesScreen() {
                   nestedScrollEnabled
                   showsVerticalScrollIndicator={true}
                 >
-                  <View className="gap-4">
+                  <View
+                    className="gap-4"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 10,
+                    }}
+                  >
                     {opiniones.map((opinion) => (
                       <View
                         key={opinion.id}
