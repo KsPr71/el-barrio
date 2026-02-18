@@ -325,8 +325,8 @@ function CustomDrawerContent(props: any) {
           ]}
         >
           <Image
-            source={require("@/assets/images/novadev.png")}
-            style={{ width: 150, height: 30 }}
+            source={require("@/assets/images/novadev1.png")}
+            style={{ width: 150, height: 50 }}
           />
           <Text style={[styles.versionText, { color: colors.muted }]}>
             <Text style={styles.versionText}>Versión 1.0.0</Text>

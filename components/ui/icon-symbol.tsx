@@ -38,6 +38,7 @@ const MAPPING = {
   "message.fill": "message",
   "bubble.left.fill": "message",
   "document.fill": "description",
+  "person.crop.rectangle.badge.plus.fill": "person-add",
 } as IconMapping;
 
 /**

@@ -56,7 +56,46 @@ export default function ModalScreen() {
         <View
           style={[
             styles.section,
-            { backgroundColor: colors.surface, borderColor: colors.border },
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderWidth: 1,
+            },
+          ]}
+        >
+          <IconSymbol
+            name="person.crop.rectangle.badge.plus.fill"
+            size={30}
+            color={colors.primary}
+          />
+
+          <Text style={styles.headerTitle}>Equipo de Trabajo</Text>
+
+          <Text style={[styles.devLine, { color: colors.foreground }]}>
+            <Text style={{ color: colors.muted }}>Desarrollador</Text>
+            {" > "}
+            Jorge A. Casares Delgado
+          </Text>
+          <Text style={[styles.devLine, { color: colors.foreground }]}>
+            <Text style={{ color: colors.muted }}>Revision</Text>
+            {" > "}
+            Jeidy Noda Gonzalez
+          </Text>
+          <Text style={[styles.devLine, { color: colors.foreground }]}>
+            <Text style={{ color: colors.muted }}>Beta Tester</Text>
+            {" > "}
+            Ing. Raisa Perdomo Miranda
+          </Text>
+          <Text style={[styles.devLine, { color: colors.foreground }]}>
+            <Text style={{ color: colors.muted }}>Beta Tester</Text>
+            {" > "}
+            Ing. Idalni Veliz Ramirez
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: colors.secondary, borderColor: colors.primary },
           ]}
         >
           <Text style={[styles.sectionLabel, { color: colors.primary }]}>
@@ -64,23 +103,10 @@ export default function ModalScreen() {
           </Text>
 
           <Image
-            source={require("@/assets/images/novadev.png")}
+            source={require("@/assets/images/novadev1.png")}
             style={styles.novaDevImage}
             resizeMode="cover"
           />
-        </View>
-
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <Text style={[styles.devLine, { color: colors.foreground }]}>
-            <Text style={{ color: colors.muted }}>Desarrollador</Text>
-            {" > "}
-            Jorge A. Casares Delgado
-          </Text>
         </View>
       </ScrollView>
     </ScreenContainer>
@@ -97,8 +123,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
+    marginLeft: 10,
+    marginBottom: 5,
   },
   closeButton: {
     padding: 4,
@@ -142,6 +170,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
+    color: "red",
   },
   novaDevText: {
     fontSize: 18,
