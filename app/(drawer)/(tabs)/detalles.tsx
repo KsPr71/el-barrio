@@ -1,6 +1,8 @@
 import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
 import { FormularioOpinion } from "@/components/formulario-opinion";
+import { ImageCarousel } from "@/components/image-carousel";
 import { ScreenContainer } from "@/components/screen-container";
+import { Separador } from "@/components/separador";
 import { UbicacionMapa } from "@/components/ubicacion-mapa";
 import { Collapsible } from "@/components/ui/collapsible";
 import { TipoSitioChip } from "@/components/ui/tipo-sitio";
@@ -159,50 +161,39 @@ export default function DetallesScreen() {
           )}
 
           <View className="p-5 gap-4">
-            <View>
-              <Text className="text-2xl font-bold text-foreground">
-                {sitio.nombre}
-              </Text>
-              {tipoSitio && (
-                <View className="mt-2">
-                  <TipoSitioChip tipo={tipoSitio} />
-                </View>
-              )}
+            <View className="flex-row items-center justify-between gap-3">
+              <View className="flex-1 shrink gap-2">
+                <Text className="text-2xl font-bold text-foreground">
+                  {sitio.nombre}
+                </Text>
+                {tipoSitio && <TipoSitioChip tipo={tipoSitio} />}
+              </View>
               {stats.total > 0 && (
-                <View className="mt-2">
-                  <EstrellasPuntuacion
-                    promedio={stats.promedio}
-                    total={stats.total}
-                    size={20}
-                    showNumber
-                    showTotal
-                  />
-                </View>
+                <EstrellasPuntuacion
+                  promedio={stats.promedio}
+                  total={stats.total}
+                  size={20}
+                  showNumber
+                  showTotal
+                />
               )}
             </View>
+
+            <Separador />
+
+            {sitio.imagenes ? (
+              <View className="px-5 pt-2 flex-col items-start justify-start">
+                <Text className="text-xs text-foreground mb-1">
+                  Galería de imágenes
+                </Text>
+                <ImageCarousel imagenes={sitio.imagenes} thumbSize={96} />
+              </View>
+            ) : null}
 
             {sitio.descripcion ? (
               <Text className="text-base text-foreground leading-6">
                 {sitio.descripcion}
               </Text>
-            ) : null}
-
-            {sitio.direccion ? (
-              <View>
-                <Text className="text-xs text-muted mb-1">Dirección</Text>
-                <Text className="text-base text-foreground">
-                  📍 {sitio.direccion}
-                </Text>
-              </View>
-            ) : null}
-
-            {sitio.telefono != null && sitio.telefono !== 0 ? (
-              <View>
-                <Text className="text-xs text-muted mb-1">Teléfono</Text>
-                <Text className="text-base text-foreground">
-                  📞 {sitio.telefono}
-                </Text>
-              </View>
             ) : null}
 
             {sitio.ofertas ? (
@@ -222,9 +213,27 @@ export default function DetallesScreen() {
                 <Text className="text-base font-semibold text-foreground mb-2">
                   Ubicación
                 </Text>
+
+                {sitio.direccion ? (
+                  <View
+                    style={{
+                      borderColor: colors.border,
+                      borderWidth: 1,
+                      borderRadius: 10,
+                      padding: 10,
+                      backgroundColor: colors.surface,
+                    }}
+                  >
+                    <Text className="text-xs text-muted mb-1">Dirección</Text>
+                    <Text className="text-base text-foreground">
+                      📍 {sitio.direccion}
+                    </Text>
+                  </View>
+                ) : null}
                 <UbicacionMapa localizacion={sitio.localizacion} />
               </View>
             ) : null}
+            <Separador />
 
             {/* Sección de Opiniones de Clientes */}
             {opiniones.length > 0 && (

@@ -1,15 +1,15 @@
 import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
-import { useProfile } from "@/hooks/use-profile";
 import { useColors } from "@/hooks/use-colors";
+import { useProfile } from "@/hooks/use-profile";
 import { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
   StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export interface FormularioOpinionProps {
@@ -18,7 +18,7 @@ export interface FormularioOpinionProps {
     sitioId: number,
     calificacion: number,
     comentario: string | null,
-    autorTexto: string | null
+    autorTexto: string | null,
   ) => Promise<void>;
   onSuccess?: () => void;
 }
@@ -34,8 +34,12 @@ export function FormularioOpinion({
   const [comentario, setComentario] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const autorDesdePerfil = (profile.name && profile.name.trim()) || (profile.email && profile.email.trim()) || null;
-  const puedePublicar = calificacion > 0 && calificacion <= 5 && !!autorDesdePerfil && !loading;
+  const autorDesdePerfil =
+    (profile.name && profile.name.trim()) ||
+    (profile.email && profile.email.trim()) ||
+    null;
+  const puedePublicar =
+    calificacion > 0 && calificacion <= 5 && !!autorDesdePerfil && !loading;
 
   const handleSubmit = async () => {
     if (calificacion === 0) {
@@ -46,7 +50,7 @@ export function FormularioOpinion({
     if (!autorDesdePerfil) {
       Alert.alert(
         "Perfil incompleto",
-        "Por favor configura tu nombre en el perfil para poder opinar."
+        "Por favor configura tu nombre en el perfil para poder opinar.",
       );
       return;
     }
@@ -57,7 +61,7 @@ export function FormularioOpinion({
         sitioId,
         calificacion,
         comentario.trim() || null,
-        autorDesdePerfil
+        autorDesdePerfil,
       );
       // Limpiar formulario
       setCalificacion(0);
@@ -67,7 +71,9 @@ export function FormularioOpinion({
     } catch (error) {
       Alert.alert(
         "Error",
-        error instanceof Error ? error.message : "No se pudo publicar tu opinión"
+        error instanceof Error
+          ? error.message
+          : "No se pudo publicar tu opinión",
       );
     } finally {
       setLoading(false);
@@ -147,7 +153,12 @@ export function FormularioOpinion({
       </View>
 
       {!autorDesdePerfil && (
-        <View style={[styles.warningBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.warningBox,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
           <Text style={[styles.warningText, { color: colors.foreground }]}>
             ⚠️ Para publicar una opinión, configura tu nombre en el perfil.
           </Text>
@@ -170,9 +181,9 @@ export function FormularioOpinion({
           <ActivityIndicator size="small" color="#FFFFFF" />
         ) : (
           <Text style={styles.submitButtonText}>
-            {autorDesdePerfil 
-              ? calificacion === 0 
-                ? "Selecciona una calificación" 
+            {autorDesdePerfil
+              ? calificacion === 0
+                ? "Selecciona una calificación"
                 : "Publicar opinión"
               : "Configura tu perfil para opinar"}
           </Text>
@@ -190,7 +201,7 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "600",
     marginBottom: 16,
   },
@@ -216,7 +227,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "500",
     marginBottom: 8,
   },
