@@ -41,6 +41,8 @@ const MAPPING = {
   "exclamationmark.triangle.fill": "warning",
   "person.crop.rectangle.badge.plus.fill": "person-add",
   "map.fill": "map",
+  "cross.case.circle.fill": "gavel",
+  info: "info-outline",
   map: "map",
 } as IconMapping;
 

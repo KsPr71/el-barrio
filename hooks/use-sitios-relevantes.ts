@@ -46,6 +46,7 @@ export function useSitiosRelevantes() {
       .select(
         "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id",
       )
+      .eq("estado_suscripcion", "aceptado")
       .order("id", { ascending: true })
       .range(from, to);
     if (err) {

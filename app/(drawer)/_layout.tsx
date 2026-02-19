@@ -282,7 +282,7 @@ function CustomDrawerContent(props: any) {
         </View>
 
         <TouchableOpacity
-          onPress={() => router.push("/(drawer)/(tabs)/colaboracion")}
+          onPress={() => router.push("/(drawer)/Administracion")}
         >
           <View
             style={[
@@ -299,7 +299,7 @@ function CustomDrawerContent(props: any) {
               <Text style={styles.featureEmoji}>🤝</Text>
             </View>
             <Text style={[styles.featureTitle, { color: colors.primary }]}>
-              Colaboración
+              Administración
             </Text>
             <Text style={[styles.featureText, { color: colors.muted }]}>
               ¿Deseas reflejar aquí tu negocio o emprendimiento destacado?

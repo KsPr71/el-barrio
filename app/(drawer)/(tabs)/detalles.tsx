@@ -93,6 +93,7 @@ export default function DetallesScreen() {
           "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id",
         )
         .eq("id", numId)
+        .eq("estado_suscripcion", "aceptado")
         .single();
       if (err) throw err;
       setSitio(data as SitioRelevante);
