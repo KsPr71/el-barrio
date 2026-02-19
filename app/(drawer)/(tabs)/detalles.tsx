@@ -64,6 +64,7 @@ export default function DetallesScreen() {
   } = useOpiniones(sitioId);
   const { tipos } = useTiposSitio();
   const [mapReloadKey, setMapReloadKey] = useState(0);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
 
   const IMAGE_HEIGHT_FULL = 320;
   const IMAGE_HEIGHT_COLLAPSED = 220;
@@ -159,358 +160,409 @@ export default function DetallesScreen() {
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <Animated.ScrollView
-          ref={scrollRef}
-          stickyHeaderIndices={[1]}
-          contentContainerStyle={{
-            paddingBottom: Math.max(24, insets.bottom + 16),
-          }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          scrollEventThrottle={16}
+        <View
+          className="px-5 py-4"
+          style={{ backgroundColor: colors.background }}
         >
-          <Animated.View
-            style={[
-              {
-                width: "100%",
-                overflow: "hidden",
-                backgroundColor: colors.border,
-              },
-              imageContainerStyle,
-            ]}
-          >
-            {imagenUrl ? (
-              <Image
-                source={{ uri: imagenUrl }}
-                style={{
-                  width: "100%",
-                  height: IMAGE_HEIGHT_FULL,
-                  backgroundColor: colors.border,
-                }}
-                contentFit="cover"
-              />
-            ) : (
-              <View
-                className="w-full items-center justify-center"
-                style={{
-                  width: "100%",
-                  height: IMAGE_HEIGHT_FULL,
-                  backgroundColor: colors.border,
-                }}
-              >
-                <Text className="text-5xl">📍</Text>
-              </View>
-            )}
-          </Animated.View>
-
-          <View
-            className="px-5 py-4"
-            style={{ backgroundColor: colors.background }}
-          >
-            <View className="flex-row items-center justify-between gap-3">
-              <View className="flex-1 shrink gap-2">
-                <Text className="text-2xl font-bold text-foreground">
-                  {sitio.nombre}
-                </Text>
-                {tipoSitio && <TipoSitioChip tipo={tipoSitio} />}
-              </View>
-              {stats.total > 0 && (
-                <EstrellasPuntuacion
-                  promedio={stats.promedio}
-                  total={stats.total}
-                  size={20}
-                  showNumber
-                  showTotal
-                />
-              )}
-            </View>
-            <Separador />
-          </View>
-
-          <View className="p-5 gap-4">
-            {sitio.imagenes ? (
-              <View className="px-5 pt-2 flex-col items-start justify-start">
-                <Text className="text-xs text-foreground mb-1">
-                  Galería de imágenes
-                </Text>
-                <ImageCarousel imagenes={sitio.imagenes} thumbSize={96} />
-              </View>
-            ) : null}
-
-            {sitio.descripcion ? (
-              <Text className="text-base text-foreground leading-6">
-                {sitio.descripcion}
+          <View className="flex-row items-center justify-between gap-3">
+            <View className="flex-1 shrink gap-2">
+              <Text className="text-2xl font-bold text-foreground">
+                {sitio.nombre}
               </Text>
-            ) : null}
+              {tipoSitio && <TipoSitioChip tipo={tipoSitio} />}
+            </View>
+            {stats.total > 0 && (
+              <EstrellasPuntuacion
+                promedio={stats.promedio}
+                total={stats.total}
+                size={20}
+                showNumber
+                showTotal
+              />
+            )}
+          </View>
+          <Separador />
+        </View>
 
-            {sitio.ofertas ? (
-              <View
-                className="rounded-xl p-4"
-                style={{ backgroundColor: colors.surface }}
+        {isMapExpanded && sitio.localizacion ? (
+          <View style={{ flex: 1, position: "relative" }}>
+            <View style={{ flex: 1 }}>
+              <Maps key={mapReloadKey} uri={sitio.localizacion} />
+            </View>
+            <TouchableOpacity
+              onPress={() => setIsMapExpanded(false)}
+              activeOpacity={0.8}
+              style={{
+                position: "absolute",
+                bottom: 16 + (insets.bottom || 0),
+                alignSelf: "center",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+                backgroundColor: colors.background,
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: colors.border,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 4,
+              }}
+            >
+              <IconSymbol
+                name="chevron.left"
+                size={20}
+                color={colors.foreground}
+              />
+              <Text
+                className="text-sm font-semibold"
+                style={{ color: colors.foreground }}
               >
-                <Text className="text-xs text-muted mb-1">Ofertas</Text>
-                <Text className="text-base text-foreground">
-                  {sitio.ofertas}
-                </Text>
-              </View>
-            ) : null}
-            {sitio.telefono ? (
-              <View
-                className="rounded-2xl p-4"
-                style={{
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <Text className="text-xs text-muted mb-3 font-medium uppercase tracking-wide">
-                  Contactar
-                </Text>
-                <View className="gap-3">
-                  <TouchableOpacity
-                    onPress={() =>
-                      Linking.openURL(
-                        `tel:${String(sitio.telefono).replace(/\D/g, "")}`,
-                      )
-                    }
-                    activeOpacity={0.7}
-                    className="flex-row items-center gap-3 rounded-xl py-3 px-4"
-                    style={{ backgroundColor: colors.background }}
-                  >
-                    <View
-                      className="rounded-full p-2"
-                      style={{ backgroundColor: colors.primary + "20" }}
-                    >
-                      <IconSymbol
-                        name="phone.fill"
-                        size={22}
-                        color={colors.primary}
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-xs text-muted">Teléfono</Text>
-                      <Text
-                        className="text-base font-semibold"
-                        style={{ color: colors.foreground }}
-                      >
-                        {sitio.telefono}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const num = String(sitio.telefono).replace(/\D/g, "");
-                      const whatsappNum = num.startsWith("53")
-                        ? num
-                        : `53${num}`;
-                      Linking.openURL(`https://wa.me/${whatsappNum}`);
-                    }}
-                    activeOpacity={0.7}
-                    className="flex-row items-center gap-3 rounded-xl py-3 px-4"
-                    style={{ backgroundColor: colors.background }}
-                  >
-                    <View
-                      className="rounded-full p-2"
-                      style={{ backgroundColor: "#25D36620" }}
-                    >
-                      <IconSymbol
-                        name="message.fill"
-                        size={22}
-                        color="#25D366"
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-xs text-muted">WhatsApp</Text>
-                      <Text
-                        className="text-base font-semibold"
-                        style={{ color: "#25D366" }}
-                      >
-                        Enviar mensaje
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : null}
-
-            {sitio.localizacion ? (
-              <View className="mt-2 gap-3">
+                Volver
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Animated.ScrollView
+            ref={scrollRef}
+            contentContainerStyle={{
+              paddingBottom: Math.max(24, insets.bottom + 16),
+            }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            scrollEventThrottle={16}
+          >
+            <Animated.View
+              style={[
+                {
+                  width: "100%",
+                  overflow: "hidden",
+                  backgroundColor: colors.border,
+                },
+                imageContainerStyle,
+              ]}
+            >
+              {imagenUrl ? (
+                <Image
+                  source={{ uri: imagenUrl }}
+                  style={{
+                    width: "100%",
+                    height: IMAGE_HEIGHT_FULL,
+                    backgroundColor: colors.border,
+                  }}
+                  contentFit="cover"
+                />
+              ) : (
                 <View
-                  className="rounded-2xl overflow-hidden"
+                  className="w-full items-center justify-center"
+                  style={{
+                    width: "100%",
+                    height: IMAGE_HEIGHT_FULL,
+                    backgroundColor: colors.border,
+                  }}
+                >
+                  <Text className="text-5xl">📍</Text>
+                </View>
+              )}
+            </Animated.View>
+
+            <View className="p-5 gap-4">
+              {sitio.imagenes ? (
+                <View className="px-5 pt-2 flex-col items-start justify-start">
+                  <Text className="text-xs text-foreground mb-1">
+                    Galería de imágenes
+                  </Text>
+                  <ImageCarousel imagenes={sitio.imagenes} thumbSize={96} />
+                </View>
+              ) : null}
+
+              {sitio.descripcion ? (
+                <Text className="text-base text-foreground leading-6">
+                  {sitio.descripcion}
+                </Text>
+              ) : null}
+
+              {sitio.ofertas ? (
+                <View
+                  className="rounded-xl p-4"
+                  style={{ backgroundColor: colors.surface }}
+                >
+                  <Text className="text-xs text-muted mb-1">Ofertas</Text>
+                  <Text className="text-base text-foreground">
+                    {sitio.ofertas}
+                  </Text>
+                </View>
+              ) : null}
+              {sitio.telefono ? (
+                <View
+                  className="rounded-2xl p-4"
                   style={{
                     backgroundColor: colors.surface,
                     borderWidth: 1,
                     borderColor: colors.border,
                   }}
                 >
-                  <View className="flex-row items-stretch p-4 gap-4">
-                    <View className="flex-1 gap-1 min-w-0">
-                      <View className="flex-row items-center gap-2">
-                        <View
-                          className="rounded-full p-2"
-                          style={{ backgroundColor: colors.primary + "20" }}
-                        >
-                          <IconSymbol
-                            name="location.fill"
-                            size={20}
-                            color={colors.primary}
-                          />
-                        </View>
-                        <Text className="text-xs text-muted font-medium uppercase tracking-wide">
-                          Ubicación
-                        </Text>
-                      </View>
-                      {sitio.direccion ? (
-                        <Text
-                          className="text-base text-foreground mt-1"
-                          numberOfLines={3}
-                        >
-                          {sitio.direccion}
-                        </Text>
-                      ) : (
-                        <Text className="text-sm text-muted mt-1">
-                          Ver en mapa
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                </View>
-
-                <View className="flex-row items-center justify-between gap-3 px-1">
-                  <TouchableOpacity
-                    onPress={() =>
-                      Alert.alert(
-                        "Aviso",
-                        "Algunas funcionalidades de Google Maps pueden no estar disponibles. Abra Google Maps si desea más información.",
-                      )
-                    }
-                    activeOpacity={0.7}
-                    className="flex-row items-center gap-1"
-                  >
-                    <IconSymbol
-                      name="exclamationmark.triangle.fill"
-                      size={18}
-                      color={colors.primary}
-                    />
-                  </TouchableOpacity>
-                  <View className="flex-row items-center gap-2">
+                  <Text className="text-xs text-muted mb-3 font-medium uppercase tracking-wide">
+                    Contactar
+                  </Text>
+                  <View className="gap-3">
                     <TouchableOpacity
                       onPress={() =>
-                        Linking.openURL(buildGoogleMapsUrl(sitio.localizacion))
+                        Linking.openURL(
+                          `tel:${String(sitio.telefono).replace(/\D/g, "")}`,
+                        )
                       }
                       activeOpacity={0.7}
-                      className="rounded-lg px-3 py-2"
-                      style={{ backgroundColor: colors.primary }}
+                      className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                      style={{ backgroundColor: colors.background }}
                     >
-                      <Text
-                        className="text-[11px] font-semibold"
-                        style={{ color: "#FFFFFF" }}
+                      <View
+                        className="rounded-full p-2"
+                        style={{ backgroundColor: colors.primary + "20" }}
                       >
-                        Google Maps
-                      </Text>
+                        <IconSymbol
+                          name="phone.fill"
+                          size={22}
+                          color={colors.primary}
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-xs text-muted">Teléfono</Text>
+                        <Text
+                          className="text-base font-semibold"
+                          style={{ color: colors.foreground }}
+                        >
+                          {sitio.telefono}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => setMapReloadKey((k) => k + 1)}
+                      onPress={() => {
+                        const num = String(sitio.telefono).replace(/\D/g, "");
+                        const whatsappNum = num.startsWith("53")
+                          ? num
+                          : `53${num}`;
+                        Linking.openURL(`https://wa.me/${whatsappNum}`);
+                      }}
                       activeOpacity={0.7}
-                      className="rounded-lg px-3 py-2 border"
-                      style={{ borderColor: colors.border }}
+                      className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                      style={{ backgroundColor: colors.background }}
                     >
-                      <Text
-                        className="text-[11px]"
-                        style={{ color: colors.muted }}
+                      <View
+                        className="rounded-full p-2"
+                        style={{ backgroundColor: "#25D36620" }}
                       >
-                        Resetear mapa
-                      </Text>
+                        <IconSymbol
+                          name="message.fill"
+                          size={22}
+                          color="#25D366"
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-xs text-muted">WhatsApp</Text>
+                        <Text
+                          className="text-base font-semibold"
+                          style={{ color: "#25D366" }}
+                        >
+                          Enviar mensaje
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>
+              ) : null}
 
-                <Maps
-                  key={mapReloadKey}
-                  uri={sitio.localizacion}
-                  height={380}
-                />
-              </View>
-            ) : null}
-
-            <Separador />
-
-            {/* Sección de Opiniones de Clientes */}
-            {opiniones.length > 0 && (
-              <View className="mt-4">
-                <Text className="text-lg font-semibold text-foreground mb-3">
-                  Opiniones de Clientes ({opiniones.length})
-                </Text>
-                <ScrollView
-                  style={{ maxHeight: 400 }}
-                  nestedScrollEnabled
-                  showsVerticalScrollIndicator={true}
-                >
+              {sitio.localizacion ? (
+                <View className="mt-2">
                   <View
-                    className="gap-4"
+                    className="rounded-2xl overflow-hidden mb-3"
                     style={{
+                      backgroundColor: colors.surface,
                       borderWidth: 1,
                       borderColor: colors.border,
-                      borderRadius: 10,
                     }}
                   >
-                    {opiniones.map((opinion) => (
-                      <View
-                        key={opinion.id}
-                        className="rounded-xl p-4"
-                        style={{ backgroundColor: colors.surface }}
-                      >
-                        <View className="flex-row items-center justify-between mb-2">
-                          <EstrellasPuntuacion
-                            promedio={opinion.calificacion}
-                            size={16}
-                          />
-                          {opinion.autor_texto && (
-                            <Text className="text-sm font-medium text-foreground">
-                              {opinion.autor_texto}
-                            </Text>
-                          )}
+                    <View className="flex-row items-stretch p-4 gap-4">
+                      <View className="flex-1 gap-1 min-w-0">
+                        <View className="flex-row items-center gap-2">
+                          <View
+                            className="rounded-full p-2"
+                            style={{ backgroundColor: colors.primary + "20" }}
+                          >
+                            <IconSymbol
+                              name="location.fill"
+                              size={20}
+                              color={colors.primary}
+                            />
+                          </View>
+                          <Text className="text-xs text-muted font-medium uppercase tracking-wide">
+                            Ubicación
+                          </Text>
                         </View>
-                        {opinion.comentario && (
-                          <Text className="text-sm text-foreground mt-2 leading-5">
-                            {opinion.comentario}
+                        {sitio.direccion ? (
+                          <Text
+                            className="text-base text-foreground mt-1"
+                            numberOfLines={3}
+                          >
+                            {sitio.direccion}
+                          </Text>
+                        ) : (
+                          <Text className="text-sm text-muted mt-1">
+                            Ver en mapa
                           </Text>
                         )}
-                        <Text className="text-xs text-muted mt-2">
-                          {new Date(opinion.creado_at).toLocaleDateString(
-                            "es-ES",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            },
-                          )}
-                        </Text>
                       </View>
-                    ))}
+                    </View>
                   </View>
-                </ScrollView>
-              </View>
-            )}
 
-            {/* Formulario para escribir opinión - dentro de accordion */}
-            {sitioId && (
-              <View className="mt-4">
-                <Collapsible title="Escribe tu opinión">
-                  <FormularioOpinion
-                    sitioId={sitioId}
-                    onCreateOpinion={crearOpinion}
-                    onSuccess={() => {
-                      refreshOpiniones();
-                      // Marcar que se necesita refrescar los sitios en index
-                      // Esto se manejará con useFocusEffect en index.tsx
-                    }}
-                  />
-                </Collapsible>
-              </View>
-            )}
-          </View>
-        </Animated.ScrollView>
+                  <Collapsible title="Ver en mapa" iconName="map.fill">
+                    <View className="gap-3">
+                      <View className="flex-row items-center justify-between gap-3 px-1">
+                        <TouchableOpacity
+                          onPress={() =>
+                            Alert.alert(
+                              "Aviso",
+                              "Algunas funcionalidades de Google Maps pueden no estar disponibles. Abra Google Maps si desea más información.",
+                            )
+                          }
+                          activeOpacity={0.7}
+                          className="flex-row items-center gap-1"
+                        >
+                          <IconSymbol
+                            name="exclamationmark.triangle.fill"
+                            size={18}
+                            color={colors.primary}
+                          />
+                        </TouchableOpacity>
+                        <View className="flex-row items-center gap-2">
+                          <TouchableOpacity
+                            onPress={() =>
+                              Linking.openURL(
+                                buildGoogleMapsUrl(sitio.localizacion),
+                              )
+                            }
+                            activeOpacity={0.7}
+                            className="rounded-lg px-3 py-2"
+                            style={{ backgroundColor: colors.primary }}
+                          >
+                            <Text
+                              className="text-[11px] font-semibold"
+                              style={{ color: "#FFFFFF" }}
+                            >
+                              Google Maps
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => setMapReloadKey((k) => k + 1)}
+                            activeOpacity={0.7}
+                            className="rounded-lg px-3 py-2 border"
+                            style={{ borderColor: colors.border }}
+                          >
+                            <Text
+                              className="text-[11px]"
+                              style={{ color: colors.muted }}
+                            >
+                              Resetear mapa
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        activeOpacity={1}
+                        onPress={() => setIsMapExpanded(true)}
+                      >
+                        <Maps
+                          key={mapReloadKey}
+                          uri={sitio.localizacion}
+                          height={380}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </Collapsible>
+                </View>
+              ) : null}
+
+              <Separador />
+
+              {/* Sección de Opiniones de Clientes */}
+              {opiniones.length > 0 && (
+                <View className="mt-4">
+                  <Text className="text-lg font-semibold text-foreground mb-3">
+                    Opiniones de Clientes ({opiniones.length})
+                  </Text>
+                  <ScrollView
+                    style={{ maxHeight: 400 }}
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <View className="gap-4">
+                      {opiniones.map((opinion) => (
+                        <View
+                          key={opinion.id}
+                          className="rounded-xl p-4"
+                          style={{
+                            backgroundColor: colors.surface,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            borderRadius: 10,
+                          }}
+                        >
+                          <View className="flex-row items-center justify-between mb-2">
+                            <EstrellasPuntuacion
+                              promedio={opinion.calificacion}
+                              size={16}
+                            />
+                            {opinion.autor_texto && (
+                              <Text className="text-sm font-medium text-foreground">
+                                {opinion.autor_texto}
+                              </Text>
+                            )}
+                          </View>
+                          {opinion.comentario && (
+                            <Text className="text-sm text-foreground mt-2 leading-5">
+                              {opinion.comentario}
+                            </Text>
+                          )}
+                          <Text className="text-xs text-muted mt-2">
+                            {new Date(opinion.creado_at).toLocaleDateString(
+                              "es-ES",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              },
+                            )}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Formulario para escribir opinión - dentro de accordion */}
+              {sitioId && (
+                <View className="mt-4">
+                  <Collapsible title="Escribe tu opinión">
+                    <FormularioOpinion
+                      sitioId={sitioId}
+                      onCreateOpinion={crearOpinion}
+                      onSuccess={() => {
+                        refreshOpiniones();
+                        // Marcar que se necesita refrescar los sitios en index
+                        // Esto se manejará con useFocusEffect en index.tsx
+                      }}
+                    />
+                  </Collapsible>
+                </View>
+              )}
+            </View>
+          </Animated.ScrollView>
+        )}
       </KeyboardAvoidingView>
     </ScreenContainer>
   );

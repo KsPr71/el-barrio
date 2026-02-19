@@ -6,15 +6,19 @@ const MAP_URL =
 
 export type MapsProps = {
   uri?: string;
+  /** Si no se pasa, el mapa usa flex: 1 (para vista a pantalla completa). */
   height?: number;
 };
 
-export default function Maps({ uri, height = 280 }: MapsProps) {
+export default function Maps({ uri, height }: MapsProps) {
   return (
     <WebView
       originWhitelist={["*"]}
       startInLoadingState
-      style={[styles.container, { height }]}
+      style={[
+        styles.container,
+        height != null ? { height, marginTop: 12 } : { flex: 1 },
+      ]}
       source={{ uri: uri ?? MAP_URL }}
       onShouldStartLoadWithRequest={(req) => !req.url.startsWith("intent://")}
     />
@@ -26,6 +30,5 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 16,
     overflow: "hidden",
-    marginTop: 12,
   },
 });

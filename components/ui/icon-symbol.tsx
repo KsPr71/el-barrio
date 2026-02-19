@@ -9,7 +9,7 @@ type IconMapping = Record<
   SymbolViewProps["name"],
   ComponentProps<typeof MaterialIcons>["name"]
 >;
-type IconSymbolName = keyof typeof MAPPING;
+export type IconSymbolName = keyof typeof MAPPING;
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -40,6 +40,8 @@ const MAPPING = {
   "document.fill": "description",
   "exclamationmark.triangle.fill": "warning",
   "person.crop.rectangle.badge.plus.fill": "person-add",
+  "map.fill": "map",
+  map: "map",
 } as IconMapping;
 
 /**
