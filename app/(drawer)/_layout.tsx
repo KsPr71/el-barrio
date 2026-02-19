@@ -3,6 +3,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useHeaderCategory } from "@/contexts/header-category-context";
 import { useColors } from "@/hooks/use-colors";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
+import Constants from "expo-constants";
 import { router, usePathname } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -329,7 +330,7 @@ function CustomDrawerContent(props: any) {
             style={{ width: 150, height: 50 }}
           />
           <Text style={[styles.versionText, { color: colors.muted }]}>
-            <Text style={styles.versionText}>Versión 1.0.0</Text>
+            Versión {Constants.expoConfig?.version ?? "1.0.0"}
           </Text>
         </View>
       </TouchableOpacity>

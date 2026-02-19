@@ -2,6 +2,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconImage } from "@/components/ui/icon-image";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import Constants from "expo-constants";
 import { router } from "expo-router";
 import {
   Image,
@@ -45,6 +46,9 @@ export default function ModalScreen() {
         </View>
         <Text style={[styles.appName, { color: colors.foreground }]}>
           Por el Barrio
+        </Text>
+        <Text style={[styles.version, { color: colors.muted }]}>
+          Versión {Constants.expoConfig?.version ?? "1.0.0"}
         </Text>
 
         <Text style={[styles.purpose, { color: colors.muted }]}>
@@ -146,6 +150,11 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 24,
     fontWeight: "bold",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  version: {
+    fontSize: 14,
     marginBottom: 16,
     textAlign: "center",
   },
