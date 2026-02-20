@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export type SitioRelevante = {
   id: number;
   nombre: string;
-  localizacion: string;
+  localizacion: string | null;
   descripcion: string | null;
   imagenes: string | null;
   ofertas: string | null;

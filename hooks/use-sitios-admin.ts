@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 export type SitioRelevanteAdmin = {
   id: number;
   nombre: string;
-  localizacion: string;
+  localizacion: string | null;
   descripcion: string | null;
   imagenes: string | null;
   ofertas: string | null;
@@ -25,7 +25,7 @@ export type SitioRelevanteAdmin = {
 
 export type InsertSitioRelevante = {
   nombre: string;
-  localizacion: string;
+  localizacion?: string | null;
   descripcion?: string | null;
   imagenes?: string | null;
   ofertas?: string | null;
@@ -107,7 +107,7 @@ export function useSitiosAdmin() {
         .from("sitios_relevantes")
         .insert({
           nombre: input.nombre,
-          localizacion: input.localizacion,
+          localizacion: input.localizacion?.trim() || null,
           descripcion: input.descripcion ?? null,
           imagenes: input.imagenes ?? null,
           ofertas: input.ofertas ?? null,
@@ -158,7 +158,7 @@ export function useSitiosAdmin() {
     ) => {
       const payload: Record<string, unknown> = {
         nombre: input.nombre,
-        localizacion: input.localizacion,
+        localizacion: input.localizacion?.trim() || null,
         descripcion: input.descripcion ?? null,
         imagenes: input.imagenes ?? null,
         ofertas: input.ofertas ?? null,

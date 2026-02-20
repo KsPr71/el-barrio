@@ -15,6 +15,7 @@
    - `migrations/20260217000000_provincia_municipio_auth_read.sql` — authenticated puede leer provincia/municipio.
    - `migrations/20260217000001_user_profiles_authenticated.sql` — authenticated puede guardar perfil (provincia/municipio para filtrar sitios).
    - `migrations/20260218000000_sitios_fecha_estado_terminos.sql` — fecha_cambio_estado, fecha_aceptado, acepto_terminos, expirar_suscripciones.
+   - `migrations/20260219000000_sitios_localizacion_nullable.sql` — localizacion opcional (permite NULL).
 
 Después puedes insertar provincias y municipios en `provincia` y `municipio`.
 

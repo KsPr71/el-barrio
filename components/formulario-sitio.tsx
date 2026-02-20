@@ -81,7 +81,7 @@ export function FormularioSitio({
     if (sitioInicial) {
       setNombre(sitioInicial.nombre);
       setDescripcion(sitioInicial.descripcion ?? "");
-      setLocalizacion(sitioInicial.localizacion);
+      setLocalizacion(sitioInicial.localizacion ?? "");
       setDireccion(sitioInicial.direccion ?? "");
       setTelefono(sitioInicial.telefono?.toString() ?? "");
       setImagenes(sitioInicial.imagenes ?? "");
@@ -109,13 +109,6 @@ export function FormularioSitio({
       Alert.alert("Error", "El nombre es obligatorio");
       return;
     }
-    if (isAdmin && !localizacion.trim()) {
-      Alert.alert(
-        "Error",
-        "La ubicación (coordenadas o referencia) es obligatoria",
-      );
-      return;
-    }
     setLoading(true);
     try {
       if (mode === "create" && !aceptoTerminos) {
@@ -129,9 +122,7 @@ export function FormularioSitio({
       const input: InsertSitioRelevante = {
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || null,
-        localizacion: isAdmin
-          ? localizacion.trim()
-          : localizacion.trim() || "Por definir",
+        localizacion: localizacion.trim() || null,
         direccion: direccion.trim() || null,
         telefono: telefono.trim()
           ? parseInt(telefono.replace(/\D/g, ""), 10) || null
@@ -246,27 +237,23 @@ export function FormularioSitio({
           },
         ]}
       />
-      {isAdmin && (
-        <>
-          <Text style={[styles.label, { color: colors.muted }]}>
-            Ubicación (coordenadas o referencia) *
-          </Text>
-          <TextInput
-            value={localizacion}
-            onChangeText={setLocalizacion}
-            placeholder="Ej: 23.1136,-82.3666 o cerca del parque central"
-            placeholderTextColor={colors.muted}
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.surface,
-                color: colors.foreground,
-                borderColor: colors.border,
-              },
-            ]}
-          />
-        </>
-      )}
+      <Text style={[styles.label, { color: colors.muted }]}>
+        Ubicación (coordenadas o referencia)
+      </Text>
+      <TextInput
+        value={localizacion}
+        onChangeText={setLocalizacion}
+        placeholder="Ej: 23.1136,-82.3666 o cerca del parque central"
+        placeholderTextColor={colors.muted}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surface,
+            color: colors.foreground,
+            borderColor: colors.border,
+          },
+        ]}
+      />
       <Text style={[styles.label, { color: colors.muted }]}>Dirección</Text>
       <TextInput
         value={direccion}
@@ -684,7 +671,6 @@ export function FormularioSitio({
         disabled={
           loading ||
           !nombre.trim() ||
-          (isAdmin && !localizacion.trim()) ||
           (mode === "create" && !aceptoTerminos)
         }
         style={[
@@ -692,7 +678,6 @@ export function FormularioSitio({
           { backgroundColor: colors.primary },
           (loading ||
             !nombre.trim() ||
-            (isAdmin && !localizacion.trim()) ||
             (mode === "create" && !aceptoTerminos)) &&
             styles.buttonDisabled,
         ]}
