@@ -23,9 +23,7 @@ Después puedes insertar provincias y municipios en `provincia` y `municipio`.
 Después de que un usuario se haya registrado en la app (Supabase Auth), asígnalo como admin ejecutando en el SQL Editor:
 
 ```sql
-insert into public.admin_profiles (id, email, role)
-values ('<UUID_DEL_USUARIO>', 'admin@ejemplo.com', 'admin')
-on conflict (id) do update set role = 'admin';
+
 ```
 
 O actualiza uno existente:
@@ -35,6 +33,8 @@ update public.admin_profiles set role = 'admin' where email = 'admin@ejemplo.com
 ```
 
 La app filtra los municipios por la provincia elegida, muestra solo sitios con `estado_suscripcion = 'aceptado'` en la página principal, y la página Administración usa Supabase Auth con roles admin/user.
+
+Para que la lista de sitios se actualice en tiempo real al agregar o editar registros (sin recargar la app), activa **Realtime** para la tabla `sitios_relevantes`: en el [Dashboard de Supabase](https://supabase.com/dashboard) → **Database** → **Replication** → activa la tabla `public.sitios_relevantes`.
 
 ## Términos y condiciones
 

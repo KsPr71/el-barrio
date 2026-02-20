@@ -106,5 +106,23 @@ export function useSitiosRelevantes() {
     fetchSitios();
   }, [fetchSitios]);
 
+  // Realtime: actualizar lista cuando se inserta, actualiza o elimina un sitio
+  useEffect(() => {
+    const channel = supabase
+      .channel("sitios_relevantes_public")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sitios_relevantes" },
+        () => {
+          fetchSitios();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchSitios]);
+
   return { sitios, loading, loadingMore, error, refresh: fetchSitios };
 }
