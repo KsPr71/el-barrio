@@ -162,11 +162,35 @@ export default function HomeScreen() {
     return tipos.filter((t) => idsPresentes.has(t.id));
   }, [sitiosPorProvincia, tipos]);
 
+  // Agrupar sitios por categoría (tipo_sitio_id) y ordenar por puntuación dentro de cada grupo
+  const sitiosAgrupados = useMemo(() => {
+    const grupos: Map<number | null, typeof sitiosPorProvincia> = new Map();
+    
+    for (const sitio of sitiosPorProvincia) {
+      const tipoId = sitio.tipo_sitio_id;
+      if (!grupos.has(tipoId)) {
+        grupos.set(tipoId, []);
+      }
+      grupos.get(tipoId)!.push(sitio);
+    }
+    
+    // Ordenar cada grupo por puntuación descendente
+    grupos.forEach((sitiosGrupo) => {
+      sitiosGrupo.sort((a, b) => b.promedio_puntuacion - a.promedio_puntuacion);
+    });
+    
+    return grupos;
+  }, [sitiosPorProvincia]);
+
   const sitiosFiltrados = useMemo(() => {
     let filtrados = sitiosPorProvincia;
     if (selectedTipoId !== null) {
-      filtrados = filtrados.filter((s) => s.tipo_sitio_id === selectedTipoId);
+      // Si hay filtro de categoría, mostrar solo esa categoría y ordenar por puntuación
+      filtrados = sitiosPorProvincia
+        .filter((s) => s.tipo_sitio_id === selectedTipoId)
+        .sort((a, b) => b.promedio_puntuacion - a.promedio_puntuacion);
     }
+    // Sin filtro: devolver todos (se mostrarán agrupados en secciones)
     return filtrados;
   }, [sitiosPorProvincia, selectedTipoId]);
 
@@ -272,7 +296,8 @@ export default function HomeScreen() {
                 No hay sitios de este tipo
                 {profile.province ? ` en ${profile.province}` : ""}.
               </Text>
-            ) : (
+            ) : selectedTipoId !== null ? (
+              // Mostrar solo la categoría seleccionada
               sitiosFiltrados.map((sitio) => (
                 <SitioRelevanteCard
                   key={sitio.id}
@@ -285,6 +310,51 @@ export default function HomeScreen() {
                   }
                 />
               ))
+            ) : (
+              // Mostrar agrupados por categoría
+              Array.from(sitiosAgrupados.entries())
+                .sort(([a], [b]) => {
+                  // Ordenar categorías: primero las que tienen tipo, luego null
+                  if (a === null) return 1;
+                  if (b === null) return -1;
+                  return a - b;
+                })
+                .map(([tipoId, sitiosGrupo]) => {
+                  const tipo = tipoId !== null ? tipos.find((t) => t.id === tipoId) : null;
+                  const nombreCategoria = tipo?.tipo ?? "Sin categoría";
+                  
+                  return (
+                    <View key={tipoId ?? "sin_categoria"} className="mb-6">
+                      <View className="mb-4 px-2">
+                        <Text
+                          className="text-xl font-bold"
+                          style={{ color: colors.foreground }}
+                        >
+                          {nombreCategoria}
+                        </Text>
+                        <Text
+                          className="text-xs mt-1"
+                          style={{ color: colors.muted }}
+                        >
+                          {sitiosGrupo.length}{" "}
+                          {sitiosGrupo.length === 1 ? "sitio" : "sitios"}
+                        </Text>
+                      </View>
+                      {sitiosGrupo.map((sitio) => (
+                        <SitioRelevanteCard
+                          key={sitio.id}
+                          sitio={sitio}
+                          onPress={() =>
+                            router.push({
+                              pathname: "/(drawer)/(tabs)/detalles",
+                              params: { id: String(sitio.id) },
+                            })
+                          }
+                        />
+                      ))}
+                    </View>
+                  );
+                })
             )}
 
             {/* Indicador de carga incremental */}
