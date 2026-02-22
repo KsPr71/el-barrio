@@ -7,6 +7,9 @@ export type TipoSitio = {
   descripcion: string | null;
 };
 
+/** Cache en memoria para no recargar categorías en cada visita a una pantalla */
+let cachedTipos: TipoSitio[] | null = null;
+
 function getErrorMessage(e: unknown, fallback: string): string {
   if (e instanceof Error) return e.message;
   if (
@@ -21,12 +24,15 @@ function getErrorMessage(e: unknown, fallback: string): string {
 }
 
 export function useTiposSitio() {
-  const [tipos, setTipos] = useState<TipoSitio[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tipos, setTipos] = useState<TipoSitio[]>(() => cachedTipos ?? []);
+  const [loading, setLoading] = useState(() => cachedTipos === null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTipos = useCallback(async () => {
-    setLoading(true);
+    const hasCache = cachedTipos !== null;
+    if (!hasCache) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const { data, error: err } = await supabase
@@ -37,11 +43,15 @@ export function useTiposSitio() {
         console.error("[useTiposSitio] error:", err);
         throw err;
       }
-      setTipos((data ?? []) as TipoSitio[]);
+      const list = (data ?? []) as TipoSitio[];
+      cachedTipos = list;
+      setTipos(list);
     } catch (e) {
       const msg = getErrorMessage(e, "Error al cargar tipos de sitio");
       setError(msg);
-      setTipos([]);
+      if (!hasCache) {
+        setTipos([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -49,6 +59,28 @@ export function useTiposSitio() {
 
   useEffect(() => {
     fetchTipos();
+  }, [fetchTipos]);
+
+  // Realtime: actualizar caché y estado cuando cambie la tabla tipos_sitio en Supabase
+  useEffect(() => {
+    const channel = supabase
+      .channel("tipos_sitio_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tipos_sitio",
+        },
+        () => {
+          fetchTipos();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchTipos]);
 
   return { tipos, loading, error, refresh: fetchTipos };
