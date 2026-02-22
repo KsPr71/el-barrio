@@ -648,7 +648,7 @@ export default function DetallesScreen() {
 
               {/* Formulario para escribir opinión - dentro de accordion */}
               {sitioId && (
-                <View className="mt-4">
+                <View className="mt-4" style={{ marginBottom: 100 }}>
                   <Collapsible title="Escribe tu opinión">
                     <FormularioOpinion
                       sitioId={sitioId}

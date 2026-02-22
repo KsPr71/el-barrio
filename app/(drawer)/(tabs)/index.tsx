@@ -21,17 +21,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
+  Easing,
   runOnJS,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SCROLL_DIRECTION_THRESHOLD = 10;
-const ANIMATION_DURATION = 220;
+const ANIMATION_DURATION = 320;
+const ANIMATION_EASING = Easing.out(Easing.cubic);
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -44,7 +46,9 @@ export default function HomeScreen() {
   const params = useLocalSearchParams<{ categoriaId?: string }>();
   const [selectedTipoId, setSelectedTipoId] = useState<number | null>(null);
   /** Filtro de provincia desde el FAB: undefined = usar perfil, null = Todas, string = id provincia */
-  const [filterProvinciaId, setFilterProvinciaId] = useState<string | null | undefined>(undefined);
+  const [filterProvinciaId, setFilterProvinciaId] = useState<
+    string | null | undefined
+  >(undefined);
   const [showProvinciaModal, setShowProvinciaModal] = useState(false);
   const { setHeaderChip, setHeaderCategoryLabel } = useHeaderCategory();
 
@@ -96,15 +100,17 @@ export default function HomeScreen() {
         const diff = y - lastScrollY.value;
         lastScrollY.value = y;
         if (diff > SCROLL_DIRECTION_THRESHOLD) {
-          // Ocultar barra
+          // Ocultar barra (suave: desvanecer y deslizar)
           categoriesVisibility.value = withTiming(0, {
             duration: ANIMATION_DURATION,
+            easing: ANIMATION_EASING,
           });
           runOnJS(showChipInHeader)();
         } else if (diff < -SCROLL_DIRECTION_THRESHOLD) {
           // Mostrar barra
           categoriesVisibility.value = withTiming(1, {
             duration: ANIMATION_DURATION,
+            easing: ANIMATION_EASING,
           });
           runOnJS(hideChipInHeader)();
         }
@@ -113,10 +119,15 @@ export default function HomeScreen() {
     [showChipInHeader, hideChipInHeader],
   );
 
-  const categoriesAnimatedStyle = useAnimatedStyle(() => ({
-    height: categoriesHeight.value * categoriesVisibility.value,
-    opacity: categoriesVisibility.value,
-  }));
+  const categoriesAnimatedStyle = useAnimatedStyle(() => {
+    const v = categoriesVisibility.value;
+    const h = categoriesHeight.value;
+    return {
+      height: h * v,
+      opacity: v,
+      transform: [{ translateY: -(1 - v) * h * 0.4 }],
+    };
+  });
 
   // Aplicar filtro de categoría desde el drawer
   useEffect(() => {
@@ -151,7 +162,9 @@ export default function HomeScreen() {
 
   const effectiveProvinciaNombre = useMemo(() => {
     if (!effectiveProvinciaId) return null;
-    return provincias.find((p) => p.id === effectiveProvinciaId)?.nombre ?? null;
+    return (
+      provincias.find((p) => p.id === effectiveProvinciaId)?.nombre ?? null
+    );
   }, [effectiveProvinciaId, provincias]);
 
   // Filtrar sitios por provincia efectiva
@@ -185,7 +198,7 @@ export default function HomeScreen() {
   // Agrupar sitios por categoría (tipo_sitio_id) y ordenar por puntuación dentro de cada grupo
   const sitiosAgrupados = useMemo(() => {
     const grupos: Map<number | null, typeof sitiosPorProvincia> = new Map();
-    
+
     for (const sitio of sitiosPorProvincia) {
       const tipoId = sitio.tipo_sitio_id;
       if (!grupos.has(tipoId)) {
@@ -193,12 +206,12 @@ export default function HomeScreen() {
       }
       grupos.get(tipoId)!.push(sitio);
     }
-    
+
     // Ordenar cada grupo por puntuación descendente
     grupos.forEach((sitiosGrupo) => {
       sitiosGrupo.sort((a, b) => b.promedio_puntuacion - a.promedio_puntuacion);
     });
-    
+
     return grupos;
   }, [sitiosPorProvincia]);
 
@@ -247,11 +260,37 @@ export default function HomeScreen() {
             }}
             className="px-4 pt-2 pb-3"
           >
-            <Text className="text-x2 font-bold text-foreground mb-3">
-              {effectiveProvinciaNombre
-                ? `Categorías en ${effectiveProvinciaNombre}`
-                : "Categorías disponibles"}
-            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                className="text-x2 font-bold text-foreground"
+                style={{ flex: 1 }}
+              >
+                {effectiveProvinciaNombre
+                  ? `Categorías en ${effectiveProvinciaNombre}`
+                  : "Categorías disponibles"}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowProvinciaModal(true)}
+                activeOpacity={0.85}
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 20,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: colors.primary,
+                }}
+              >
+                <IconSymbol name="location.fill" size={18} color="#FFF" />
+              </TouchableOpacity>
+            </View>
             {tiposDisponibles.length > 0 && !loading && !error && (
               <TipoSitioChipCarousel
                 tipos={tiposDisponibles}
@@ -278,7 +317,7 @@ export default function HomeScreen() {
           }}
           showsVerticalScrollIndicator={false}
         >
-          <View className="gap-8">
+          <View className="gap-8" style={{ paddingBottom: 100 }}>
             {loading && sitiosPorProvincia.length === 0 ? (
               <View className="py-12 items-center">
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -314,7 +353,10 @@ export default function HomeScreen() {
             ) : sitiosFiltrados.length === 0 ? (
               <Text className="text-sm text-muted py-4">
                 No hay sitios de este tipo
-                {effectiveProvinciaNombre ? ` en ${effectiveProvinciaNombre}` : ""}.
+                {effectiveProvinciaNombre
+                  ? ` en ${effectiveProvinciaNombre}`
+                  : ""}
+                .
               </Text>
             ) : selectedTipoId !== null ? (
               // Mostrar solo la categoría seleccionada
@@ -340,9 +382,10 @@ export default function HomeScreen() {
                   return a - b;
                 })
                 .map(([tipoId, sitiosGrupo]) => {
-                  const tipo = tipoId !== null ? tipos.find((t) => t.id === tipoId) : null;
+                  const tipo =
+                    tipoId !== null ? tipos.find((t) => t.id === tipoId) : null;
                   const nombreCategoria = tipo?.tipo ?? "Sin categoría";
-                  
+
                   return (
                     <View key={tipoId ?? "sin_categoria"} className="mb-6">
                       <View className="mb-4 px-2">
@@ -388,30 +431,6 @@ export default function HomeScreen() {
             )}
           </View>
         </Animated.ScrollView>
-
-        {/* FAB: filtrar por provincia */}
-        <TouchableOpacity
-          onPress={() => setShowProvinciaModal(true)}
-          activeOpacity={0.85}
-          style={{
-            position: "absolute",
-            right: 20,
-            bottom: 20 + Math.max(insets.bottom, 8),
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.primary,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 4,
-            elevation: 6,
-          }}
-        >
-          <IconSymbol name="location.fill" size={26} color="#FFF" />
-        </TouchableOpacity>
 
         {/* Modal: elegir provincia */}
         <Modal

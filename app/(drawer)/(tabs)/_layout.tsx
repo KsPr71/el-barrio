@@ -1,30 +1,44 @@
 import { Tabs } from "expo-router";
+import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { FloatingTabBar } from "@/components/floating-tab-bar";
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { Platform } from "react-native";
+
+const TAB_BAR_MARGIN_BOTTOM = 12;
+const TAB_BAR_HEIGHT = 64;
 
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const bottomPadding = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 8);
-  const tabBarHeight = 56 + bottomPadding;
+  const bottomPadding =
+    Platform.OS === "web" ? 12 : Math.max(insets.bottom, 20);
+  const tabBarBottom = TAB_BAR_MARGIN_BOTTOM + bottomPadding;
 
   return (
     <Tabs
+      tabBar={(props: Parameters<typeof FloatingTabBar>[0]) => (
+        <FloatingTabBar {...props} />
+      )}
       screenOptions={{
         tabBarActiveTintColor: colors.tint,
+        tabBarInactiveTintColor: colors.muted,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
-          paddingTop: 8,
-          paddingBottom: bottomPadding,
-          height: tabBarHeight,
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
-          borderTopWidth: 0.5,
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: tabBarBottom,
+          height: TAB_BAR_HEIGHT,
+          paddingTop: 0,
+          paddingBottom: 0,
+          backgroundColor: "transparent",
+          borderTopWidth: 0,
+          shadowColor: "transparent",
+          elevation: 0,
         },
       }}
     >
@@ -42,7 +56,7 @@ export default function TabLayout() {
         options={{
           title: "Aquí hay",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="hand.point.down" color={color} />
+            <IconSymbol size={28} name="magnifyingglass" color={color} />
           ),
         }}
       />

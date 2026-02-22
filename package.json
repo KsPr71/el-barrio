@@ -38,6 +38,7 @@
     "drizzle-orm": "^0.44.7",
     "expo": "~54.0.33",
     "expo-audio": "~1.1.1",
+    "expo-blur": "~14.0.2",
     "expo-build-properties": "^1.0.10",
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.20",

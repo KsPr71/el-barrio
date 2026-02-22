@@ -137,6 +137,7 @@ function CustomDrawerContent(props: any) {
 
   const isDetallesActive = pathname.includes("/detalles");
   const isProfileActive = pathname.includes("/profile");
+  const isAquiHayActive = pathname.includes("/aqui-hay");
   const WHATSAPP_NUMERO = "5352708602";
   const URL_WHATSAPP = `https://wa.me/${WHATSAPP_NUMERO}`;
 
@@ -198,10 +199,27 @@ function CustomDrawerContent(props: any) {
         activeTintColor={colors.primary}
         inactiveTintColor={colors.foreground}
         activeBackgroundColor={colors.surface}
-        focused={!isDetallesActive && !isProfileActive}
+        focused={!isDetallesActive && !isProfileActive && !isAquiHayActive}
       />
 
       {/* Páginas adicionales con el mismo estilo que DrawerItemList */}
+
+      <DrawerItem
+        label="Aquí hay"
+        icon={({ color, size }) => (
+          <IconSymbol name="magnifyingglass" size={size} color={color} />
+        )}
+        onPress={() => {
+          props.navigation.closeDrawer();
+          requestAnimationFrame(() => {
+            router.push("/(drawer)/(tabs)/aqui-hay");
+          });
+        }}
+        activeTintColor={colors.primary}
+        inactiveTintColor={colors.foreground}
+        activeBackgroundColor={colors.surface}
+        focused={isAquiHayActive}
+      />
 
       <DrawerItem
         label="Perfil"
