@@ -14,6 +14,7 @@ import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
 import { formatHorarioForDisplay, isHorarioAbierto } from "@/lib/horario";
 import { supabase } from "@/lib/supabase";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -101,7 +102,7 @@ export default function DetallesScreen() {
       const { data, error: err } = await supabase
         .from("sitios_relevantes")
         .select(
-          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id, horario",
+          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id, horario, facebook_link, instagram_link, sitio_web",
         )
         .eq("id", numId)
         .eq("estado_suscripcion", "aceptado")
@@ -229,7 +230,7 @@ export default function DetallesScreen() {
               activeOpacity={0.8}
               style={{
                 position: "absolute",
-                bottom: 16 + (insets.bottom || 0),
+                bottom: 100 + (insets.bottom || 0),
                 alignSelf: "center",
                 flexDirection: "row",
                 alignItems: "center",
@@ -405,7 +406,10 @@ export default function DetallesScreen() {
 
               {/* Comentario de la sección de contactos */}
 
-              {sitio.telefono ? (
+              {sitio.telefono ||
+              sitio.facebook_link ||
+              sitio.instagram_link ||
+              sitio.sitio_web ? (
                 <Collapsible title="Contacto" iconName="person.fill">
                   <View
                     className="rounded-2xl p-4"
@@ -416,68 +420,185 @@ export default function DetallesScreen() {
                     }}
                   >
                     <View className="gap-3">
-                      <TouchableOpacity
-                        onPress={() =>
-                          Linking.openURL(
-                            `tel:${String(sitio.telefono).replace(/\D/g, "")}`,
-                          )
-                        }
-                        activeOpacity={0.7}
-                        className="flex-row items-center gap-3 rounded-xl py-3 px-4"
-                        style={{ backgroundColor: colors.background }}
-                      >
-                        <View
-                          className="rounded-full p-2"
-                          style={{ backgroundColor: colors.primary + "20" }}
-                        >
-                          <IconSymbol
-                            name="phone.fill"
-                            size={22}
-                            color={colors.primary}
-                          />
-                        </View>
-                        <View className="flex-1">
-                          <Text className="text-xs text-muted">Teléfono</Text>
-                          <Text
-                            className="text-base font-semibold"
-                            style={{ color: colors.foreground }}
+                      {sitio.telefono ? (
+                        <>
+                          <TouchableOpacity
+                            onPress={() =>
+                              Linking.openURL(
+                                `tel:${String(sitio.telefono).replace(/\D/g, "")}`,
+                              )
+                            }
+                            activeOpacity={0.7}
+                            className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                            style={{ backgroundColor: colors.background }}
                           >
-                            {sitio.telefono}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          const num = String(sitio.telefono).replace(/\D/g, "");
-                          const whatsappNum = num.startsWith("53")
-                            ? num
-                            : `53${num}`;
-                          Linking.openURL(`https://wa.me/${whatsappNum}`);
-                        }}
-                        activeOpacity={0.7}
-                        className="flex-row items-center gap-3 rounded-xl py-3 px-4"
-                        style={{ backgroundColor: colors.background }}
-                      >
-                        <View
-                          className="rounded-full p-2"
-                          style={{ backgroundColor: "#25D36620" }}
-                        >
-                          <IconSymbol
-                            name="message.fill"
-                            size={22}
-                            color="#25D366"
-                          />
-                        </View>
-                        <View className="flex-1">
-                          <Text className="text-xs text-muted">WhatsApp</Text>
-                          <Text
-                            className="text-base font-semibold"
-                            style={{ color: "#25D366" }}
+                            <View
+                              className="rounded-full p-2"
+                              style={{ backgroundColor: colors.primary + "20" }}
+                            >
+                              <IconSymbol
+                                name="phone.fill"
+                                size={22}
+                                color={colors.primary}
+                              />
+                            </View>
+                            <View className="flex-1">
+                              <Text className="text-xs text-muted">
+                                Teléfono
+                              </Text>
+                              <Text
+                                className="text-base font-semibold"
+                                style={{ color: colors.foreground }}
+                              >
+                                {sitio.telefono}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              const num = String(sitio.telefono).replace(
+                                /\D/g,
+                                "",
+                              );
+                              const whatsappNum = num.startsWith("53")
+                                ? num
+                                : `53${num}`;
+                              Linking.openURL(`https://wa.me/${whatsappNum}`);
+                            }}
+                            activeOpacity={0.7}
+                            className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                            style={{ backgroundColor: colors.background }}
                           >
-                            Enviar mensaje
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
+                            <View
+                              className="rounded-full p-2"
+                              style={{ backgroundColor: "#25D36620" }}
+                            >
+                              <IconSymbol
+                                name="message.fill"
+                                size={22}
+                                color="#25D366"
+                              />
+                            </View>
+                            <View className="flex-1">
+                              <Text className="text-xs text-muted">
+                                WhatsApp
+                              </Text>
+                              <Text
+                                className="text-base font-semibold"
+                                style={{ color: "#25D366" }}
+                              >
+                                Enviar mensaje
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        </>
+                      ) : null}
+                      {sitio.facebook_link ? (
+                        <TouchableOpacity
+                          onPress={() =>
+                            Linking.openURL(
+                              sitio.facebook_link!.startsWith("http")
+                                ? sitio.facebook_link!
+                                : `https://${sitio.facebook_link}`,
+                            )
+                          }
+                          activeOpacity={0.7}
+                          className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                          style={{ backgroundColor: colors.background }}
+                        >
+                          <View
+                            className="rounded-full p-2"
+                            style={{ backgroundColor: "#1877F220" }}
+                          >
+                            <MaterialCommunityIcons
+                              name="facebook"
+                              size={22}
+                              color="#1877F2"
+                            />
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-xs text-muted">Facebook</Text>
+                            <Text
+                              className="text-base font-semibold"
+                              style={{ color: colors.foreground }}
+                            >
+                              Ver página
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ) : null}
+                      {sitio.instagram_link ? (
+                        <TouchableOpacity
+                          onPress={() =>
+                            Linking.openURL(
+                              sitio.instagram_link!.startsWith("http")
+                                ? sitio.instagram_link!
+                                : `https://${sitio.instagram_link}`,
+                            )
+                          }
+                          activeOpacity={0.7}
+                          className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                          style={{ backgroundColor: colors.background }}
+                        >
+                          <View
+                            className="rounded-full p-2"
+                            style={{ backgroundColor: "#E4405F20" }}
+                          >
+                            <MaterialCommunityIcons
+                              name="instagram"
+                              size={22}
+                              color="#E4405F"
+                            />
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-xs text-muted">
+                              Instagram
+                            </Text>
+                            <Text
+                              className="text-base font-semibold"
+                              style={{ color: colors.foreground }}
+                            >
+                              Ver perfil
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ) : null}
+                      {sitio.sitio_web ? (
+                        <TouchableOpacity
+                          onPress={() =>
+                            Linking.openURL(
+                              sitio.sitio_web!.startsWith("http")
+                                ? sitio.sitio_web!
+                                : `https://${sitio.sitio_web}`,
+                            )
+                          }
+                          activeOpacity={0.7}
+                          className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                          style={{ backgroundColor: colors.background }}
+                        >
+                          <View
+                            className="rounded-full p-2"
+                            style={{ backgroundColor: colors.primary + "20" }}
+                          >
+                            <MaterialCommunityIcons
+                              name="web"
+                              size={22}
+                              color={colors.primary}
+                            />
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-xs text-muted">
+                              Sitio web
+                            </Text>
+                            <Text
+                              className="text-base font-semibold"
+                              style={{ color: colors.foreground }}
+                            >
+                              Visitar web
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ) : null}
                     </View>
                   </View>
                 </Collapsible>

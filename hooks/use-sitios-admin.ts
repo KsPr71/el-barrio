@@ -22,6 +22,9 @@ export type SitioRelevanteAdmin = {
   fecha_cambio_estado: string | null;
   fecha_aceptado: string | null;
   horario: string | null;
+  facebook_link: string | null;
+  instagram_link: string | null;
+  sitio_web: string | null;
 };
 
 export type InsertSitioRelevante = {
@@ -37,6 +40,9 @@ export type InsertSitioRelevante = {
   provincia_id?: string | null;
   municipio_id?: string | null;
   horario?: string | null;
+  facebook_link?: string | null;
+  instagram_link?: string | null;
+  sitio_web?: string | null;
   acepto_terminos?: boolean;
 };
 
@@ -78,7 +84,7 @@ export function useSitiosAdmin() {
       let query = supabase
         .from("sitios_relevantes")
         .select(
-          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id, creado_por, creado_at, estado_suscripcion, fecha_cambio_estado, fecha_aceptado, horario",
+          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id, creado_por, creado_at, estado_suscripcion, fecha_cambio_estado, fecha_aceptado, horario, facebook_link, instagram_link, sitio_web",
         )
         .order("creado_at", { ascending: false });
 
@@ -120,6 +126,9 @@ export function useSitiosAdmin() {
           provincia_id: input.provincia_id ?? null,
           municipio_id: input.municipio_id ?? null,
           horario: input.horario ?? null,
+          facebook_link: input.facebook_link?.trim() || null,
+          instagram_link: input.instagram_link?.trim() || null,
+          sitio_web: input.sitio_web?.trim() || null,
           creado_por: user.id,
           estado_suscripcion: "creado",
           acepto_terminos: input.acepto_terminos ?? false,
@@ -172,6 +181,9 @@ export function useSitiosAdmin() {
         provincia_id: input.provincia_id ?? null,
         municipio_id: input.municipio_id ?? null,
         horario: input.horario ?? null,
+        facebook_link: input.facebook_link?.trim() || null,
+        instagram_link: input.instagram_link?.trim() || null,
+        sitio_web: input.sitio_web?.trim() || null,
       };
       if (isAdmin && estado != null) {
         payload.estado_suscripcion = estado;

@@ -62,6 +62,13 @@ export function FormularioSitio({
     sitioInicial?.telefono?.toString() ?? "",
   );
   const [horario, setHorario] = useState(sitioInicial?.horario ?? "");
+  const [facebookLink, setFacebookLink] = useState(
+    sitioInicial?.facebook_link ?? "",
+  );
+  const [instagramLink, setInstagramLink] = useState(
+    sitioInicial?.instagram_link ?? "",
+  );
+  const [sitioWeb, setSitioWeb] = useState(sitioInicial?.sitio_web ?? "");
   const [ofertas, setOfertas] = useState(sitioInicial?.ofertas ?? "");
   const [imagenes, setImagenes] = useState(sitioInicial?.imagenes ?? "");
   const [tipoSitioId, setTipoSitioId] = useState<number | null>(
@@ -90,6 +97,9 @@ export function FormularioSitio({
       setDireccion(sitioInicial.direccion ?? "");
       setTelefono(sitioInicial.telefono?.toString() ?? "");
       setHorario(sitioInicial.horario ?? "");
+      setFacebookLink(sitioInicial.facebook_link ?? "");
+      setInstagramLink(sitioInicial.instagram_link ?? "");
+      setSitioWeb(sitioInicial.sitio_web ?? "");
       setOfertas(sitioInicial.ofertas ?? "");
       setImagenes(sitioInicial.imagenes ?? "");
       setTipoSitioId(sitioInicial.tipo_sitio_id);
@@ -142,6 +152,9 @@ export function FormularioSitio({
         provincia_id: provinciaId ?? null,
         municipio_id: municipioId ?? null,
         horario: horario.trim() || null,
+        facebook_link: facebookLink.trim() || null,
+        instagram_link: instagramLink.trim() || null,
+        sitio_web: sitioWeb.trim() || null,
         acepto_terminos: mode === "create" ? aceptoTerminos : undefined,
       };
       if (mode === "edit" && sitioInicial && onUpdate) {
@@ -159,6 +172,9 @@ export function FormularioSitio({
         setDireccion("");
         setTelefono("");
         setHorario("");
+        setFacebookLink("");
+        setInstagramLink("");
+        setSitioWeb("");
         setOfertas("");
         setImagenes("");
         setTipoSitioId(null);
@@ -286,6 +302,60 @@ export function FormularioSitio({
         placeholder="Ej: 52708602"
         placeholderTextColor={colors.muted}
         keyboardType="phone-pad"
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surface + "60",
+            color: colors.foreground,
+            borderColor: colors.border,
+          },
+        ]}
+      />
+      <Text style={[styles.label, { color: colors.muted }]}>Facebook</Text>
+      <TextInput
+        value={facebookLink}
+        onChangeText={setFacebookLink}
+        placeholder="https://facebook.com/..."
+        placeholderTextColor={colors.muted}
+        keyboardType="url"
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surface + "60",
+            color: colors.foreground,
+            borderColor: colors.border,
+          },
+        ]}
+      />
+      <Text style={[styles.label, { color: colors.muted }]}>Instagram</Text>
+      <TextInput
+        value={instagramLink}
+        onChangeText={setInstagramLink}
+        placeholder="https://instagram.com/..."
+        placeholderTextColor={colors.muted}
+        keyboardType="url"
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surface + "60",
+            color: colors.foreground,
+            borderColor: colors.border,
+          },
+        ]}
+      />
+      <Text style={[styles.label, { color: colors.muted }]}>Sitio web</Text>
+      <TextInput
+        value={sitioWeb}
+        onChangeText={setSitioWeb}
+        placeholder="https://..."
+        placeholderTextColor={colors.muted}
+        keyboardType="url"
+        autoCapitalize="none"
+        autoCorrect={false}
         style={[
           styles.input,
           {
