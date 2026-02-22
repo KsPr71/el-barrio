@@ -139,7 +139,9 @@ export function FormularioSitio({
       const input: InsertSitioRelevante = {
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || null,
-        localizacion: localizacion.trim() || null,
+        localizacion: isAdmin
+          ? localizacion.trim() || null
+          : (sitioInicial?.localizacion ?? null),
         direccion: direccion.trim() || null,
         telefono: telefono.trim()
           ? parseInt(telefono.replace(/\D/g, ""), 10) || null
@@ -263,23 +265,27 @@ export function FormularioSitio({
           },
         ]}
       />
-      <Text style={[styles.label, { color: colors.muted }]}>
-        Ubicación (coordenadas o referencia)
-      </Text>
-      <TextInput
-        value={localizacion}
-        onChangeText={setLocalizacion}
-        placeholder="Ej: 23.1136,-82.3666 o cerca del parque central"
-        placeholderTextColor={colors.muted}
-        style={[
-          styles.input,
-          {
-            backgroundColor: colors.surface + "60",
-            color: colors.foreground,
-            borderColor: colors.border,
-          },
-        ]}
-      />
+      {isAdmin && (
+        <>
+          <Text style={[styles.label, { color: colors.muted }]}>
+            Ubicación (coordenadas o referencia)
+          </Text>
+          <TextInput
+            value={localizacion}
+            onChangeText={setLocalizacion}
+            placeholder="Ej: 23.1136,-82.3666 o cerca del parque central"
+            placeholderTextColor={colors.muted}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.surface + "60",
+                color: colors.foreground,
+                borderColor: colors.border,
+              },
+            ]}
+          />
+        </>
+      )}
       <Text style={[styles.label, { color: colors.muted }]}>Dirección</Text>
       <TextInput
         value={direccion}
