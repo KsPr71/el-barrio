@@ -16,6 +16,7 @@ export type SitioRelevante = {
   provincia_id: string | null;
   municipio_id: string | null;
   promedio_puntuacion: number; // Promedio de calificaciones (0 si no hay opiniones)
+  horario: string | null;
 };
 
 function getErrorMessage(e: unknown, fallback: string): string {
@@ -77,7 +78,7 @@ export function useSitiosRelevantes() {
     const { data, error: err } = await supabase
       .from("sitios_relevantes")
       .select(
-        "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id",
+        "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id, horario",
       )
       .eq("estado_suscripcion", "aceptado")
       .order("tipo_sitio_id", { ascending: true, nullsFirst: false })

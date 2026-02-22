@@ -183,7 +183,10 @@ export default function ModalScreen() {
         <View
           style={[
             styles.section,
-            { backgroundColor: colors.secondary, borderColor: colors.primary },
+            {
+              backgroundColor: colors.secondary + "30",
+              borderColor: colors.primary,
+            },
           ]}
         >
           <Text style={[styles.sectionLabel, { color: colors.primary }]}>

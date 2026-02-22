@@ -1,4 +1,5 @@
 import { URL_TERMINOS_CONDICIONES } from "@/constants/const";
+import { HorarioInput } from "@/components/horario-input";
 import { ImageUploadSitio } from "@/components/image-upload-sitio";
 import { useColors } from "@/hooks/use-colors";
 import { useLocations } from "@/hooks/use-locations";
@@ -59,6 +60,7 @@ export function FormularioSitio({
   const [telefono, setTelefono] = useState(
     sitioInicial?.telefono?.toString() ?? "",
   );
+  const [horario, setHorario] = useState(sitioInicial?.horario ?? "");
   const [imagenes, setImagenes] = useState(sitioInicial?.imagenes ?? "");
   const [tipoSitioId, setTipoSitioId] = useState<number | null>(
     sitioInicial?.tipo_sitio_id ?? null,
@@ -85,6 +87,7 @@ export function FormularioSitio({
       setLocalizacion(sitioInicial.localizacion ?? "");
       setDireccion(sitioInicial.direccion ?? "");
       setTelefono(sitioInicial.telefono?.toString() ?? "");
+      setHorario(sitioInicial.horario ?? "");
       setImagenes(sitioInicial.imagenes ?? "");
       setTipoSitioId(sitioInicial.tipo_sitio_id);
       setProvinciaId(sitioInicial.provincia_id);
@@ -135,6 +138,7 @@ export function FormularioSitio({
         tipo_sitio_id: tipoSitioId ?? null,
         provincia_id: provinciaId ?? null,
         municipio_id: municipioId ?? null,
+        horario: horario.trim() || null,
         acepto_terminos: mode === "create" ? aceptoTerminos : undefined,
       };
       if (mode === "edit" && sitioInicial && onUpdate) {
@@ -151,6 +155,7 @@ export function FormularioSitio({
         setLocalizacion("");
         setDireccion("");
         setTelefono("");
+        setHorario("");
         setImagenes("");
         setTipoSitioId(null);
         setProvinciaId(null);
@@ -286,6 +291,8 @@ export function FormularioSitio({
           },
         ]}
       />
+      <Text style={[styles.label, { color: colors.muted }]}>Horario</Text>
+      <HorarioInput value={horario} onChange={setHorario} />
       <Text style={[styles.label, { color: colors.muted }]}>Descripción</Text>
       <TextInput
         value={descripcion}

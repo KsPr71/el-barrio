@@ -1,5 +1,5 @@
-import type { TipoSitio } from "@/hooks/use-tipos-sitio";
 import { useColors } from "@/hooks/use-colors";
+import type { TipoSitio } from "@/hooks/use-tipos-sitio";
 import { Text, View } from "react-native";
 
 export interface TipoSitioChipProps {

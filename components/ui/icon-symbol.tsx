@@ -43,6 +43,7 @@ const MAPPING = {
   "map.fill": "map",
   "cross.case.circle.fill": "gavel",
   "dollarsign.circle.fill": "attach-money",
+  "clock.fill": "schedule",
   info: "info-outline",
   map: "map",
 } as IconMapping;

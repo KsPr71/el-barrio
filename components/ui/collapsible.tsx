@@ -1,43 +1,46 @@
-import { PropsWithChildren, useState } from "react";
-import {
-  LayoutAnimation,
-  Platform,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
-} from "react-native";
-
 import type { IconSymbolName } from "@/components/ui/icon-symbol";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { PropsWithChildren, useState } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
+import Animated, {
+  FadeInDown,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 export function Collapsible({
   children,
   title,
   iconName,
-}: PropsWithChildren<{ title: string; iconName?: IconSymbolName }>) {
+  trailingElement,
+}: PropsWithChildren<{
+  title: string;
+  iconName?: IconSymbolName;
+  trailingElement?: React.ReactNode;
+}>) {
   const [isOpen, setIsOpen] = useState(false);
   const colors = useColors();
+  const chevronRotation = useSharedValue(0);
 
   const toggle = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    chevronRotation.value = withTiming(isOpen ? 0 : 1, { duration: 200 });
     setIsOpen((value) => !value);
   };
 
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${chevronRotation.value * 90}deg` }],
+  }));
+
   return (
-    <View className="bg-background">
+    <View className="bg-background" style={{ width: "100%" }}>
       <TouchableOpacity
         className="flex-row items-center gap-2"
         onPress={toggle}
         activeOpacity={0.8}
+        style={{ width: "100%" }}
       >
         {iconName ? (
           <View
@@ -53,15 +56,23 @@ export function Collapsible({
             <IconSymbol name={iconName} size={20} color={colors.primary} />
           </View>
         ) : null}
-        <IconSymbol
-          name="chevron.right"
-          size={18}
-          color={colors.icon}
-          style={{ transform: [{ rotate: isOpen ? "90deg" : "0deg" }] }}
-        />
-        <Text className="text-base font-semibold text-foreground">{title}</Text>
+        <Animated.View style={chevronStyle}>
+          <IconSymbol name="chevron.right" size={18} color={colors.icon} />
+        </Animated.View>
+        <Text className="text-base font-semibold text-foreground flex-1">
+          {title}
+        </Text>
+        {trailingElement}
       </TouchableOpacity>
-      {isOpen ? <View className="mt-3">{children}</View> : null}
+      {isOpen ? (
+        <Animated.View
+          entering={FadeInDown.duration(320).springify().damping(15)}
+          exiting={FadeOut.duration(220)}
+          className="mt-3 overflow-hidden"
+        >
+          {children}
+        </Animated.View>
+      ) : null}
     </View>
   );
 }

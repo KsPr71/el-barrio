@@ -12,6 +12,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useOpiniones } from "@/hooks/use-opiniones";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
+import { formatHorarioForDisplay, isHorarioAbierto } from "@/lib/horario";
 import { supabase } from "@/lib/supabase";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
@@ -100,7 +101,7 @@ export default function DetallesScreen() {
       const { data, error: err } = await supabase
         .from("sitios_relevantes")
         .select(
-          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id",
+          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id, horario",
         )
         .eq("id", numId)
         .eq("estado_suscripcion", "aceptado")
@@ -216,7 +217,6 @@ export default function DetallesScreen() {
               />
             )}
           </View>
-          <Separador />
         </View>
 
         {isMapExpanded && sitio.localizacion ? (
@@ -325,6 +325,7 @@ export default function DetallesScreen() {
                   {sitio.descripcion}
                 </Text>
               ) : null}
+              <Separador />
 
               {/* Comentario de la sección de ofertas */}
 
@@ -333,16 +334,71 @@ export default function DetallesScreen() {
                   <View
                     className="rounded-2xl p-4"
                     style={{
-                      backgroundColor: colors.surface,
+                      backgroundColor: colors.background + "50",
                       borderWidth: 1,
                       borderColor: colors.border,
                     }}
                   >
-                    <View className="mt-2">
+                    <View
+                      className="mt-2"
+                      style={{
+                        backgroundColor: colors.background,
+                        padding: 10,
+                        borderRadius: 10,
+                      }}
+                    >
                       <Text className="text-base text-foreground">
                         {sitio.ofertas}
                       </Text>
                     </View>
+                  </View>
+                </Collapsible>
+              ) : null}
+
+              {sitio.horario && sitio.horario.trim() ? (
+                <Collapsible
+                  title="Horario"
+                  iconName="clock.fill"
+                  trailingElement={
+                    isHorarioAbierto(sitio.horario) === true ? (
+                      <View
+                        className="rounded-full px-2.5 py-1"
+                        style={{ backgroundColor: "#16a34a" }}
+                      >
+                        <Text
+                          className="text-xs font-semibold"
+                          style={{ color: "#ffffff" }}
+                        >
+                          Abierto
+                        </Text>
+                      </View>
+                    ) : isHorarioAbierto(sitio.horario) === false ? (
+                      <View
+                        className="rounded-full px-2.5 py-1"
+                        style={{ backgroundColor: "#dc2626" }}
+                      >
+                        <Text
+                          className="text-xs font-semibold"
+                          style={{ color: "#ffffff" }}
+                        >
+                          Cerrado
+                        </Text>
+                      </View>
+                    ) : null
+                  }
+                >
+                  <View
+                    className="rounded-2xl p-4"
+                    style={{
+                      backgroundColor: colors.background + "50",
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: 40,
+                    }}
+                  >
+                    <Text className="text-base text-foreground leading-7">
+                      {formatHorarioForDisplay(sitio.horario)}
+                    </Text>
                   </View>
                 </Collapsible>
               ) : null}
@@ -354,7 +410,7 @@ export default function DetallesScreen() {
                   <View
                     className="rounded-2xl p-4"
                     style={{
-                      backgroundColor: colors.surface,
+                      backgroundColor: colors.background + "50",
                       borderWidth: 1,
                       borderColor: colors.border,
                     }}
@@ -432,7 +488,7 @@ export default function DetallesScreen() {
                   <View
                     className="rounded-2xl p-4"
                     style={{
-                      backgroundColor: colors.surface,
+                      backgroundColor: colors.background + "50",
                       borderWidth: 1,
                       borderColor: colors.border,
                     }}
@@ -442,7 +498,9 @@ export default function DetallesScreen() {
                         className="rounded-xl p-3"
                         style={{ backgroundColor: colors.background }}
                       >
-                        <Text className="text-xs text-muted mb-1">Dirección</Text>
+                        <Text className="text-xs text-muted mb-1">
+                          Dirección
+                        </Text>
                         {sitio.direccion ? (
                           <Text className="text-base text-foreground">
                             {sitio.direccion}
@@ -453,6 +511,7 @@ export default function DetallesScreen() {
                           </Text>
                         )}
                       </View>
+                      <Separador />
 
                       <View
                         className="rounded-xl p-3"
@@ -483,7 +542,8 @@ export default function DetallesScreen() {
                             <TouchableOpacity
                               onPress={() => {
                                 const loc = sitio.localizacion;
-                                if (loc) Linking.openURL(buildGoogleMapsUrl(loc));
+                                if (loc)
+                                  Linking.openURL(buildGoogleMapsUrl(loc));
                               }}
                               activeOpacity={0.7}
                               className="rounded-lg px-3 py-2"

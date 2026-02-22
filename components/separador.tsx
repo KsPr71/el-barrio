@@ -9,7 +9,7 @@ export function Separador() {
       style={{
         borderBottomWidth: 1,
         height: 3,
-        borderBottomColor: colors.secondary,
+        borderBottomColor: colors.primary + "10",
       }}
     ></View>
   );

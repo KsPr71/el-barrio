@@ -4,6 +4,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useOpiniones } from "@/hooks/use-opiniones";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
+import { isHorarioAbierto } from "@/lib/horario";
 import { Image } from "expo-image";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Separador } from "./separador";
@@ -70,9 +71,34 @@ export function SitioRelevanteCard({
         {tipoSitio && <TipoSitioChip tipo={tipoSitio} overlay />}
       </View>
       <View className="p-4">
-        <Text className="text-lg font-bold text-foreground" numberOfLines={2}>
-          {sitio.nombre}
-        </Text>
+        <View className="flex-row items-center justify-between gap-2">
+          <Text
+            className="text-lg font-bold text-foreground flex-1"
+            numberOfLines={2}
+          >
+            {sitio.nombre}
+          </Text>
+          {(isHorarioAbierto(sitio.horario) === true ||
+            isHorarioAbierto(sitio.horario) === false) && (
+            <View
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 12,
+                backgroundColor:
+                  isHorarioAbierto(sitio.horario) === true
+                    ? "#16a34a"
+                    : "#dc2626",
+              }}
+            >
+              <Text className="text-[10px] font-semibold text-white">
+                {isHorarioAbierto(sitio.horario) === true
+                  ? "Abierto"
+                  : "Cerrado"}
+              </Text>
+            </View>
+          )}
+        </View>
 
         {stats.total > 0 && (
           <View className="mt-2">
@@ -113,6 +139,7 @@ export function SitioRelevanteCard({
               style={{
                 paddingHorizontal: 4,
                 fontStyle: "italic",
+                marginRight: 10,
               }}
               numberOfLines={2}
             >
