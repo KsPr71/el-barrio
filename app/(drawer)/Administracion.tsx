@@ -53,6 +53,15 @@ function formatTiempoSuscripcion(fechaAceptado: string | null): string | null {
   return `${meses} mes(es)`;
 }
 
+const ESTADO_CHIP_STYLE: Record<
+  "creado" | "en_revision" | "aceptado",
+  { bg: string; text: string }
+> = {
+  creado: { bg: "#6b728020", text: "#6b7280" },
+  en_revision: { bg: "#f59e0b20", text: "#d97706" },
+  aceptado: { bg: "#16a34a20", text: "#16a34a" },
+};
+
 function SitioAdminRow({
   sitio,
   onPress,
@@ -66,9 +75,11 @@ function SitioAdminRow({
   const { tipos } = useTiposSitio();
   const tipo = tipos.find((t) => t.id === sitio.tipo_sitio_id);
   const tiempoSuscripcion =
-    !isAdmin && sitio.estado_suscripcion === "aceptado"
+    sitio.estado_suscripcion === "aceptado"
       ? formatTiempoSuscripcion(sitio.fecha_aceptado)
       : null;
+  const estadoStyle =
+    ESTADO_CHIP_STYLE[sitio.estado_suscripcion] ?? ESTADO_CHIP_STYLE.creado;
 
   return (
     <TouchableOpacity
@@ -86,28 +97,44 @@ function SitioAdminRow({
         >
           {sitio.nombre}
         </Text>
-        <Text style={[styles.rowMeta, { color: colors.muted }]}>
-          {tipo?.tipo ?? "—"} ·{" "}
-          {ESTADO_LABELS[sitio.estado_suscripcion] ?? sitio.estado_suscripcion}
-        </Text>
-      </View>
-      {tiempoSuscripcion && (
-        <View
-          style={[
-            styles.chipSuscripcion,
-            {
-              backgroundColor:
-                tiempoSuscripcion === "Vencido" ? "#dc2626" : colors.primary,
-            },
-          ]}
-        >
-          <Text style={styles.chipSuscripcionText}>
-            {tiempoSuscripcion === "Vencido"
-              ? "Suscripción vencida"
-              : `Vence en ${tiempoSuscripcion}`}
+        {tipo ? (
+          <Text
+            style={[styles.rowMeta, { color: colors.muted }]}
+            numberOfLines={1}
+          >
+            {tipo.tipo}
           </Text>
+        ) : null}
+        <View style={styles.chipRow}>
+          <View
+            style={[styles.estadoChip, { backgroundColor: estadoStyle.bg }]}
+          >
+            <Text style={[styles.estadoChipText, { color: estadoStyle.text }]}>
+              {ESTADO_LABELS[sitio.estado_suscripcion] ??
+                sitio.estado_suscripcion}
+            </Text>
+          </View>
+          {tiempoSuscripcion !== null && (
+            <View
+              style={[
+                styles.chipSuscripcion,
+                {
+                  backgroundColor:
+                    tiempoSuscripcion === "Vencido"
+                      ? "#dc2626"
+                      : colors.muted + "80",
+                },
+              ]}
+            >
+              <Text style={styles.chipSuscripcionText}>
+                {tiempoSuscripcion === "Vencido"
+                  ? "Suscripción vencida"
+                  : `Vence en ${tiempoSuscripcion}`}
+              </Text>
+            </View>
+          )}
         </View>
-      )}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -721,15 +748,26 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
-  rowMain: { marginBottom: 8 },
+  rowMain: { marginBottom: 0 },
   rowNombre: { fontSize: 16, fontWeight: "600" },
-  rowMeta: { fontSize: 13 },
-  chipSuscripcion: {
-    alignSelf: "flex-start",
+  rowMeta: { fontSize: 13, marginTop: 2 },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  estadoChip: {
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 12,
-    marginTop: 6,
+  },
+  estadoChipText: { fontSize: 12, fontWeight: "600" },
+  chipSuscripcion: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
   },
   chipSuscripcionText: { color: "#FFF", fontSize: 12, fontWeight: "600" },
   estadoActions: { flexDirection: "row", gap: 8, flexWrap: "wrap" },

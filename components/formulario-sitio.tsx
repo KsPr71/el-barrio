@@ -1,6 +1,6 @@
-import { URL_TERMINOS_CONDICIONES } from "@/constants/const";
 import { HorarioInput } from "@/components/horario-input";
 import { ImageUploadSitio } from "@/components/image-upload-sitio";
+import { URL_TERMINOS_CONDICIONES } from "@/constants/const";
 import { useColors } from "@/hooks/use-colors";
 import { useLocations } from "@/hooks/use-locations";
 import type {
@@ -237,7 +237,7 @@ export function FormularioSitio({
         style={[
           styles.input,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: colors.surface + "60",
             color: colors.foreground,
             borderColor: colors.border,
           },
@@ -254,7 +254,7 @@ export function FormularioSitio({
         style={[
           styles.input,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: colors.surface + "60",
             color: colors.foreground,
             borderColor: colors.border,
           },
@@ -269,7 +269,7 @@ export function FormularioSitio({
         style={[
           styles.input,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: colors.surface + "60",
             color: colors.foreground,
             borderColor: colors.border,
           },
@@ -285,7 +285,7 @@ export function FormularioSitio({
         style={[
           styles.input,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: colors.surface + "60",
             color: colors.foreground,
             borderColor: colors.border,
           },
@@ -305,7 +305,7 @@ export function FormularioSitio({
           styles.input,
           styles.textArea,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: colors.surface + "60",
             color: colors.foreground,
             borderColor: colors.border,
           },
@@ -316,7 +316,10 @@ export function FormularioSitio({
         onPress={() => setShowTipoPicker(true)}
         style={[
           styles.combobox,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          {
+            backgroundColor: colors.surface + "60",
+            borderColor: colors.border,
+          },
         ]}
       >
         <Text
@@ -414,7 +417,10 @@ export function FormularioSitio({
         onPress={() => setShowProvinciaPicker(true)}
         style={[
           styles.combobox,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          {
+            backgroundColor: colors.surface + "60",
+            borderColor: colors.border,
+          },
         ]}
       >
         <Text
@@ -466,7 +472,9 @@ export function FormularioSitio({
                 style={[
                   styles.pickerOption,
                   { borderBottomColor: colors.border },
-                  provinciaId === null && { backgroundColor: colors.surface },
+                  provinciaId === null && {
+                    backgroundColor: colors.surface + "60",
+                  },
                 ]}
               >
                 <Text
@@ -518,7 +526,10 @@ export function FormularioSitio({
         disabled={!provinciaId}
         style={[
           styles.combobox,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          {
+            backgroundColor: colors.surface + "60",
+            borderColor: colors.border,
+          },
           !provinciaId && { opacity: 0.6 },
         ]}
       >
@@ -618,9 +629,7 @@ export function FormularioSitio({
       </Modal>
       {isAdmin && (
         <>
-          <Text style={[styles.label, { color: colors.muted }]}>
-            Imágenes
-          </Text>
+          <Text style={[styles.label, { color: colors.muted }]}>Imágenes</Text>
           <ImageUploadSitio
             nombreSitio={nombre.trim() || "sitio"}
             value={imagenes}
@@ -641,14 +650,25 @@ export function FormularioSitio({
                   styles.chip,
                   { borderColor: colors.border },
                   estadoSuscripcion === e && {
-                    backgroundColor: colors.primary,
-                    borderColor: colors.primary,
+                    backgroundColor:
+                      e === "creado"
+                        ? colors.primary
+                        : e === "en_revision"
+                          ? colors.secondary
+                          : colors.success,
+                    borderColor:
+                      e === "creado"
+                        ? colors.primary
+                        : e === "en_revision"
+                          ? colors.secondary
+                          : colors.success,
                   },
                 ]}
               >
                 <Text
                   style={[
                     styles.chipText,
+                    { color: colors.foreground },
                     {
                       color:
                         estadoSuscripcion === e ? "#FFF" : colors.foreground,
@@ -669,9 +689,7 @@ export function FormularioSitio({
       <TouchableOpacity
         onPress={handleSubmit}
         disabled={
-          loading ||
-          !nombre.trim() ||
-          (mode === "create" && !aceptoTerminos)
+          loading || !nombre.trim() || (mode === "create" && !aceptoTerminos)
         }
         style={[
           styles.button,
@@ -741,7 +759,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 16,
   },
   textArea: { minHeight: 80, textAlignVertical: "top" },

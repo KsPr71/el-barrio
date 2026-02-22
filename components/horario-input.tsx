@@ -6,7 +6,15 @@ import {
   isValidTime,
 } from "@/lib/horario";
 import { useEffect, useCallback, useState } from "react";
-import { Text, TextInput, TouchableOpacity, View, StyleSheet } from "react-native";
+import {
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  StyleSheet,
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export interface HorarioInputProps {
   value: string;
@@ -33,6 +41,23 @@ function formatTimeOnBlur(s: string): string {
   return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 }
 
+/** Convierte "HH:mm" a Date (hoy a esa hora) */
+function timeStringToDate(s: string): Date {
+  const d = new Date();
+  if (isValidTime(s)) {
+    const [h, m] = s.split(":").map(Number);
+    d.setHours(h, m, 0, 0);
+  }
+  return d;
+}
+
+/** Convierte Date a "HH:mm" */
+function dateToTimeString(d: Date): string {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+const isNative = Platform.OS === "ios" || Platform.OS === "android";
+
 function DiaRow({
   label,
   slot,
@@ -44,6 +69,8 @@ function DiaRow({
   onChange: (s: HorarioFriendly["weekdays"]) => void;
   colors: { muted: string; foreground: string; surface: string; border: string; primary: string };
 }) {
+  const [activePicker, setActivePicker] = useState<"from" | "to" | null>(null);
+
   const toggleCerrado = () => {
     if (slot.cerrado) {
       onChange({ cerrado: false, from: "09:00", to: "18:00" });
@@ -51,6 +78,67 @@ function DiaRow({
       onChange({ cerrado: true, from: "", to: "" });
     }
   };
+
+  const handleTimeChange = (field: "from" | "to") => (event: { type: string }, date?: Date) => {
+    setActivePicker(null);
+    if (Platform.OS === "android" && event.type !== "set") return;
+    if (date) {
+      const timeStr = dateToTimeString(date);
+      onChange(field === "from" ? { ...slot, from: timeStr } : { ...slot, to: timeStr });
+    }
+  };
+
+  const inputStyle = (isValid: boolean) => [
+    styles.timeInput,
+    {
+      backgroundColor: colors.surface,
+      color: colors.foreground,
+      borderColor: isValid ? colors.border : "#ef4444",
+    },
+  ];
+
+  const timeField = (field: "from" | "to", placeholder: string, value: string) => {
+    if (isNative) {
+      return (
+        <TouchableOpacity
+          onPress={() => setActivePicker(field)}
+          style={inputStyle(isValidTime(value))}
+        >
+          <Text style={{ color: value ? colors.foreground : colors.muted }}>
+            {value || placeholder}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+    return (
+      <TextInput
+        value={value}
+        onChangeText={(v) =>
+          onChange({
+            ...slot,
+            [field]: sanitizeTimeInput(v),
+          })
+        }
+        onBlur={() => {
+          const formatted = formatTimeOnBlur(value);
+          if (formatted && formatted !== value) {
+            onChange({ ...slot, [field]: formatted });
+          }
+        }}
+        placeholder={placeholder}
+        placeholderTextColor={colors.muted}
+        style={inputStyle(isValidTime(value))}
+        maxLength={5}
+        keyboardType="numbers-and-punctuation"
+        editable
+      />
+    );
+  };
+
+  const pickerValue =
+    activePicker === "from"
+      ? timeStringToDate(slot.from || "09:00")
+      : timeStringToDate(slot.to || "18:00");
 
   return (
     <View style={styles.row}>
@@ -78,63 +166,17 @@ function DiaRow({
       </View>
       {!slot.cerrado && (
         <View style={styles.timeRow}>
-          <TextInput
-            value={slot.from}
-            onChangeText={(v) =>
-              onChange({
-                ...slot,
-                from: sanitizeTimeInput(v),
-              })
-            }
-            onBlur={() => {
-              const formatted = formatTimeOnBlur(slot.from);
-              if (formatted && formatted !== slot.from) {
-                onChange({ ...slot, from: formatted });
-              }
-            }}
-            placeholder="09:00"
-            placeholderTextColor={colors.muted}
-            style={[
-              styles.timeInput,
-              {
-                backgroundColor: colors.surface,
-                color: colors.foreground,
-                borderColor: isValidTime(slot.from) ? colors.border : "#ef4444",
-              },
-            ]}
-            maxLength={5}
-            keyboardType="numbers-and-punctuation"
-            editable
-          />
+          {timeField("from", "09:00", slot.from)}
           <Text style={[styles.sep, { color: colors.muted }]}>a</Text>
-          <TextInput
-            value={slot.to}
-            onChangeText={(v) =>
-              onChange({
-                ...slot,
-                to: sanitizeTimeInput(v),
-              })
-            }
-            onBlur={() => {
-              const formatted = formatTimeOnBlur(slot.to);
-              if (formatted && formatted !== slot.to) {
-                onChange({ ...slot, to: formatted });
-              }
-            }}
-            placeholder="18:00"
-            placeholderTextColor={colors.muted}
-            style={[
-              styles.timeInput,
-              {
-                backgroundColor: colors.surface,
-                color: colors.foreground,
-                borderColor: isValidTime(slot.to) ? colors.border : "#ef4444",
-              },
-            ]}
-            maxLength={5}
-            keyboardType="numbers-and-punctuation"
-            editable
-          />
+          {timeField("to", "18:00", slot.to)}
+          {isNative && activePicker !== null && (
+            <DateTimePicker
+              value={pickerValue}
+              mode="time"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={handleTimeChange(activePicker)}
+            />
+          )}
         </View>
       )}
     </View>
