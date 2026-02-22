@@ -1,6 +1,7 @@
 import { ScreenContainer } from "@/components/screen-container";
 import { SitioRelevanteCard } from "@/components/sitio-relevante-card";
 import { TipoSitioChipCarousel } from "@/components/tipo-sitio-chip-carousel";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useHeaderCategory } from "@/contexts/header-category-context";
 import { useColors } from "@/hooks/use-colors";
 import { useLocations } from "@/hooks/use-locations";
@@ -13,10 +14,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   LayoutChangeEvent,
+  Modal,
+  Pressable,
+  ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   runOnJS,
   useAnimatedScrollHandler,
@@ -30,6 +35,7 @@ const ANIMATION_DURATION = 220;
 
 export default function HomeScreen() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const { sitios, loading, loadingMore, error, refresh } =
     useSitiosRelevantes();
   const { tipos } = useTiposSitio();
@@ -37,6 +43,9 @@ export default function HomeScreen() {
   const { provincias } = useLocations();
   const params = useLocalSearchParams<{ categoriaId?: string }>();
   const [selectedTipoId, setSelectedTipoId] = useState<number | null>(null);
+  /** Filtro de provincia desde el FAB: undefined = usar perfil, null = Todas, string = id provincia */
+  const [filterProvinciaId, setFilterProvinciaId] = useState<string | null | undefined>(undefined);
+  const [showProvinciaModal, setShowProvinciaModal] = useState(false);
   const { setHeaderChip, setHeaderCategoryLabel } = useHeaderCategory();
 
   // Etiqueta de la categoría seleccionada para el chip del header
@@ -127,18 +136,29 @@ export default function HomeScreen() {
     }, [refreshProfile, refresh]),
   );
 
-  // Obtener el ID de la provincia del usuario
+  // Provincia del perfil (para valor por defecto)
   const provinciaUsuarioId = useMemo(() => {
     if (!profile.province || provincias.length === 0) return null;
     const provincia = provincias.find((p) => p.nombre === profile.province);
     return provincia?.id ?? null;
   }, [profile.province, provincias]);
 
-  // Filtrar sitios por provincia del usuario
+  // Provincia efectiva: FAB override o perfil; null = mostrar todos
+  const effectiveProvinciaId = useMemo(() => {
+    if (filterProvinciaId === undefined) return provinciaUsuarioId;
+    return filterProvinciaId;
+  }, [filterProvinciaId, provinciaUsuarioId]);
+
+  const effectiveProvinciaNombre = useMemo(() => {
+    if (!effectiveProvinciaId) return null;
+    return provincias.find((p) => p.id === effectiveProvinciaId)?.nombre ?? null;
+  }, [effectiveProvinciaId, provincias]);
+
+  // Filtrar sitios por provincia efectiva
   const sitiosPorProvincia = useMemo(() => {
-    if (!provinciaUsuarioId) return sitios;
-    return sitios.filter((s) => s.provincia_id === provinciaUsuarioId);
-  }, [sitios, provinciaUsuarioId]);
+    if (!effectiveProvinciaId) return sitios;
+    return sitios.filter((s) => s.provincia_id === effectiveProvinciaId);
+  }, [sitios, effectiveProvinciaId]);
 
   // Cantidad de sitios por tipo (para los badges de categorías)
   const countsByTipoId = useMemo(() => {
@@ -228,8 +248,8 @@ export default function HomeScreen() {
             className="px-4 pt-2 pb-3"
           >
             <Text className="text-x2 font-bold text-foreground mb-3">
-              {profile.province
-                ? `Categorías disponibles en ${profile.province}`
+              {effectiveProvinciaNombre
+                ? `Categorías en ${effectiveProvinciaNombre}`
                 : "Categorías disponibles"}
             </Text>
             {tiposDisponibles.length > 0 && !loading && !error && (
@@ -287,14 +307,14 @@ export default function HomeScreen() {
               </View>
             ) : sitiosPorProvincia.length === 0 ? (
               <Text className="text-sm text-muted py-4">
-                {profile.province
-                  ? `No hay sitios relevantes en ${profile.province} por ahora.`
+                {effectiveProvinciaNombre
+                  ? `No hay sitios relevantes en ${effectiveProvinciaNombre} por ahora.`
                   : "No hay sitios relevantes por ahora."}
               </Text>
             ) : sitiosFiltrados.length === 0 ? (
               <Text className="text-sm text-muted py-4">
                 No hay sitios de este tipo
-                {profile.province ? ` en ${profile.province}` : ""}.
+                {effectiveProvinciaNombre ? ` en ${effectiveProvinciaNombre}` : ""}.
               </Text>
             ) : selectedTipoId !== null ? (
               // Mostrar solo la categoría seleccionada
@@ -368,6 +388,156 @@ export default function HomeScreen() {
             )}
           </View>
         </Animated.ScrollView>
+
+        {/* FAB: filtrar por provincia */}
+        <TouchableOpacity
+          onPress={() => setShowProvinciaModal(true)}
+          activeOpacity={0.85}
+          style={{
+            position: "absolute",
+            right: 20,
+            bottom: 20 + Math.max(insets.bottom, 8),
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: colors.primary,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 6,
+          }}
+        >
+          <IconSymbol name="location.fill" size={26} color="#FFF" />
+        </TouchableOpacity>
+
+        {/* Modal: elegir provincia */}
+        <Modal
+          visible={showProvinciaModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowProvinciaModal(false)}
+        >
+          <Pressable
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              justifyContent: "flex-end",
+            }}
+            onPress={() => setShowProvinciaModal(false)}
+          >
+            <Pressable
+              style={{
+                backgroundColor: colors.background,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                paddingBottom: Math.max(insets.bottom, 16),
+                maxHeight: "70%",
+              }}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 20,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
+                }}
+              >
+                <Text
+                  className="text-lg font-semibold"
+                  style={{ color: colors.foreground }}
+                >
+                  Filtrar por provincia
+                </Text>
+              </View>
+              <ScrollView
+                style={{ maxHeight: 400 }}
+                contentContainerStyle={{ paddingVertical: 8 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                <TouchableOpacity
+                  onPress={() => {
+                    setFilterProvinciaId(null);
+                    setShowProvinciaModal(false);
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 14,
+                    paddingHorizontal: 20,
+                    backgroundColor:
+                      effectiveProvinciaId === null
+                        ? colors.primary + "20"
+                        : "transparent",
+                  }}
+                >
+                  <IconSymbol
+                    name="location.fill"
+                    size={22}
+                    color={
+                      effectiveProvinciaId === null
+                        ? colors.primary
+                        : colors.muted
+                    }
+                  />
+                  <Text
+                    className="text-base ml-3"
+                    style={{
+                      color:
+                        effectiveProvinciaId === null
+                          ? colors.primary
+                          : colors.foreground,
+                      fontWeight: effectiveProvinciaId === null ? "600" : "400",
+                    }}
+                  >
+                    Todas las provincias
+                  </Text>
+                </TouchableOpacity>
+                {provincias.map((p) => {
+                  const isSelected = effectiveProvinciaId === p.id;
+                  return (
+                    <TouchableOpacity
+                      key={p.id}
+                      onPress={() => {
+                        setFilterProvinciaId(p.id);
+                        setShowProvinciaModal(false);
+                      }}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        paddingVertical: 14,
+                        paddingHorizontal: 20,
+                        backgroundColor: isSelected
+                          ? colors.primary + "20"
+                          : "transparent",
+                      }}
+                    >
+                      <IconSymbol
+                        name="location.fill"
+                        size={22}
+                        color={isSelected ? colors.primary : colors.muted}
+                      />
+                      <Text
+                        className="text-base ml-3"
+                        style={{
+                          color: isSelected
+                            ? colors.primary
+                            : colors.foreground,
+                          fontWeight: isSelected ? "600" : "400",
+                        }}
+                      >
+                        {p.nombre}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </ScreenContainer>
   );

@@ -16,7 +16,7 @@ import { supabase } from "@/lib/supabase";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -33,6 +33,8 @@ import Animated, {
   useAnimatedRef,
   useAnimatedStyle,
   useScrollOffset,
+  useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -65,6 +67,10 @@ export default function DetallesScreen() {
   const { tipos } = useTiposSitio();
   const [mapReloadKey, setMapReloadKey] = useState(0);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  /** Imagen mostrada como principal; al tocar una miniatura del carrusel se actualiza. */
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const imageFadeOpacity = useSharedValue(1);
+  const userTappedImage = useRef(false);
 
   const IMAGE_HEIGHT_FULL = 320;
   const IMAGE_HEIGHT_COLLAPSED = 220;
@@ -79,6 +85,10 @@ export default function DetallesScreen() {
       [IMAGE_HEIGHT_FULL, IMAGE_HEIGHT_COLLAPSED],
       Extrapolation.CLAMP,
     ),
+  }));
+
+  const imageFadeStyle = useAnimatedStyle(() => ({
+    opacity: imageFadeOpacity.value,
   }));
 
   const fetchSitio = useCallback(async (sitioId: string) => {
@@ -115,6 +125,29 @@ export default function DetallesScreen() {
     }
   }, [id, fetchSitio]);
 
+  // Al cargar o cambiar el sitio, usar la primera imagen como principal
+  useEffect(() => {
+    if (sitio) setSelectedImageUrl(getFirstImageUrl(sitio.imagenes));
+  }, [sitio]);
+
+  // Animación de desvanecimiento al cambiar la imagen principal (solo cuando el usuario elige otra)
+  useEffect(() => {
+    if (userTappedImage.current && selectedImageUrl) {
+      userTappedImage.current = false;
+      imageFadeOpacity.value = 0;
+      requestAnimationFrame(() => {
+        imageFadeOpacity.value = withTiming(1, { duration: 350 });
+      });
+    }
+    // imageFadeOpacity es estable (useSharedValue)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedImageUrl]);
+
+  const handleSelectImage = useCallback((uri: string) => {
+    userTappedImage.current = true;
+    setSelectedImageUrl(uri);
+  }, []);
+
   if (!id) {
     return (
       <ScreenContainer className="p-6">
@@ -148,7 +181,7 @@ export default function DetallesScreen() {
     );
   }
 
-  const imagenUrl = getFirstImageUrl(sitio.imagenes);
+  const imagenPrincipalUrl = selectedImageUrl ?? getFirstImageUrl(sitio.imagenes);
   const tipoSitio =
     sitio.tipo_sitio_id != null
       ? tipos.find((t) => t.id === sitio.tipo_sitio_id)
@@ -241,28 +274,30 @@ export default function DetallesScreen() {
                 {
                   width: "100%",
                   overflow: "hidden",
-                  backgroundColor: colors.border,
+                  backgroundColor: colors.surface,
                 },
                 imageContainerStyle,
               ]}
             >
-              {imagenUrl ? (
-                <Image
-                  source={{ uri: imagenUrl }}
-                  style={{
-                    width: "100%",
-                    height: IMAGE_HEIGHT_FULL,
-                    backgroundColor: colors.border,
-                  }}
-                  contentFit="cover"
-                />
+              {imagenPrincipalUrl ? (
+                <Animated.View style={[{ flex: 1 }, imageFadeStyle]}>
+                  <Image
+                    source={{ uri: imagenPrincipalUrl }}
+                    style={{
+                      width: "100%",
+                      height: IMAGE_HEIGHT_FULL,
+                      backgroundColor: colors.surface,
+                    }}
+                    contentFit="cover"
+                  />
+                </Animated.View>
               ) : (
                 <View
                   className="w-full items-center justify-center"
                   style={{
                     width: "100%",
                     height: IMAGE_HEIGHT_FULL,
-                    backgroundColor: colors.border,
+                    backgroundColor: colors.surface,
                   }}
                 >
                   <Text className="text-5xl">📍</Text>
@@ -276,7 +311,11 @@ export default function DetallesScreen() {
                   <Text className="text-xs text-foreground mb-1">
                     Galería de imágenes
                   </Text>
-                  <ImageCarousel imagenes={sitio.imagenes} thumbSize={96} />
+                  <ImageCarousel
+                    imagenes={sitio.imagenes}
+                    thumbSize={96}
+                    onImagePress={handleSelectImage}
+                  />
                 </View>
               ) : null}
 
@@ -286,17 +325,22 @@ export default function DetallesScreen() {
                 </Text>
               ) : null}
 
-              {sitio.ofertas ? (
-                <View
-                  className="rounded-xl p-4"
-                  style={{ backgroundColor: colors.surface }}
-                >
-                  <Text className="text-xs text-muted mb-1">Ofertas</Text>
-                  <Text className="text-base text-foreground">
-                    {sitio.ofertas}
-                  </Text>
-                </View>
+              {/* Comentario de la sección de ofertas */}
+              <Text className="text-base text-foreground leading-6">
+                Ofertas
+              </Text>
+
+              {sitio.ofertas && sitio.ofertas.length > 0 ? (
+                <Collapsible title="Ofertas" iconName="chevron.right">
+                  <View className="mt-2">
+                    <Text className="text-base text-foreground">
+                      {sitio.ofertas}
+                    </Text>
+                  </View>
+                </Collapsible>
               ) : null}
+
+              {/* Comentario de la sección de contactos */}
               {sitio.telefono ? (
                 <View
                   className="rounded-2xl p-4"
@@ -440,11 +484,10 @@ export default function DetallesScreen() {
                         </TouchableOpacity>
                         <View className="flex-row items-center gap-2">
                           <TouchableOpacity
-                            onPress={() =>
-                              Linking.openURL(
-                                buildGoogleMapsUrl(sitio.localizacion),
-                              )
-                            }
+                            onPress={() => {
+                              const loc = sitio.localizacion;
+                              if (loc) Linking.openURL(buildGoogleMapsUrl(loc));
+                            }}
                             activeOpacity={0.7}
                             className="rounded-lg px-3 py-2"
                             style={{ backgroundColor: colors.primary }}
