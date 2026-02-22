@@ -12,6 +12,8 @@ import { IconSymbol } from "./ui/icon-symbol";
 export interface SitioRelevanteCardProps {
   sitio: SitioRelevante;
   onPress?: () => void;
+  /** Palabras encontradas en ofertas (ej. búsqueda "Aquí hay") */
+  matchedWords?: string[];
 }
 
 /** Obtiene la primera URL de imagen si imagenes es una URL o varias separadas por coma. */
@@ -26,6 +28,7 @@ function getFirstImageUrl(imagenes: string | null): string | null {
 export function SitioRelevanteCard({
   sitio,
   onPress,
+  matchedWords,
 }: SitioRelevanteCardProps) {
   const colors = useColors();
   const { tipos } = useTiposSitio();
@@ -144,6 +147,22 @@ export function SitioRelevanteCard({
               numberOfLines={2}
             >
               {sitio.direccion}
+            </Text>
+          </View>
+        ) : null}
+        {matchedWords && matchedWords.length > 0 ? (
+          <View className="mt-2 flex-row flex-wrap items-center gap-1">
+            <Text
+              className="text-xs"
+              style={{ color: colors.muted, fontWeight: "500" }}
+            >
+              En ofertas:
+            </Text>
+            <Text
+              className="text-xs"
+              style={{ color: colors.primary, fontWeight: "600" }}
+            >
+              {matchedWords.join(", ")}
             </Text>
           </View>
         ) : null}

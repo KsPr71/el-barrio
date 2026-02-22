@@ -46,6 +46,8 @@ const MAPPING = {
   "clock.fill": "schedule",
   info: "info-outline",
   map: "map",
+  magnifyingglass: "search",
+  "hand.point.down": "arrow-downward",
 } as IconMapping;
 
 /**

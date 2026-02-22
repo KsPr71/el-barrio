@@ -1,6 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+/** Cache en memoria para no tener que consultar la BD en cada búsqueda (p. ej. en "Aquí hay") */
+let cachedSitiosRelevantes: SitioRelevante[] | null = null;
+
 export type SitioRelevante = {
   id: number;
   nombre: string;
@@ -33,9 +36,9 @@ function getErrorMessage(e: unknown, fallback: string): string {
 }
 
 export function useSitiosRelevantes() {
-  const [sitios, setSitios] = useState<SitioRelevante[]>([]);
-  // loading: carga inicial (primera página). loadingMore: carga incremental posterior.
-  const [loading, setLoading] = useState(true);
+  const [sitios, setSitios] = useState<SitioRelevante[]>(() => cachedSitiosRelevantes ?? []);
+  // loading: si hay cache al montar, no mostramos loading (búsqueda sin consultar BD).
+  const [loading, setLoading] = useState(() => cachedSitiosRelevantes === null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
@@ -120,10 +123,12 @@ export function useSitiosRelevantes() {
         }
         return b.promedio_puntuacion - a.promedio_puntuacion;
       });
+      cachedSitiosRelevantes = first;
       setSitios(first);
     } catch (e) {
       const msg = getErrorMessage(e, "Error al cargar sitios relevantes");
       setError(msg);
+      cachedSitiosRelevantes = null;
       setSitios([]);
     } finally {
       if (requestIdRef.current === requestId) {
@@ -162,7 +167,6 @@ export function useSitiosRelevantes() {
       
       setSitios((prev) => {
         const combined = [...prev, ...allPages];
-        // Reordenar todo el array completo
         combined.sort((a, b) => {
           if (a.tipo_sitio_id !== b.tipo_sitio_id) {
             if (a.tipo_sitio_id === null) return 1;
@@ -171,6 +175,7 @@ export function useSitiosRelevantes() {
           }
           return b.promedio_puntuacion - a.promedio_puntuacion;
         });
+        cachedSitiosRelevantes = combined;
         return combined;
       });
     } catch (e) {

@@ -62,6 +62,7 @@ export function FormularioSitio({
     sitioInicial?.telefono?.toString() ?? "",
   );
   const [horario, setHorario] = useState(sitioInicial?.horario ?? "");
+  const [ofertas, setOfertas] = useState(sitioInicial?.ofertas ?? "");
   const [imagenes, setImagenes] = useState(sitioInicial?.imagenes ?? "");
   const [tipoSitioId, setTipoSitioId] = useState<number | null>(
     sitioInicial?.tipo_sitio_id ?? null,
@@ -89,6 +90,7 @@ export function FormularioSitio({
       setDireccion(sitioInicial.direccion ?? "");
       setTelefono(sitioInicial.telefono?.toString() ?? "");
       setHorario(sitioInicial.horario ?? "");
+      setOfertas(sitioInicial.ofertas ?? "");
       setImagenes(sitioInicial.imagenes ?? "");
       setTipoSitioId(sitioInicial.tipo_sitio_id);
       setProvinciaId(sitioInicial.provincia_id);
@@ -135,7 +137,7 @@ export function FormularioSitio({
         imagenes: isAdmin
           ? imagenes.trim() || null
           : (sitioInicial?.imagenes ?? null),
-        ofertas: null,
+        ofertas: ofertas.trim() || null,
         tipo_sitio_id: tipoSitioId ?? null,
         provincia_id: provinciaId ?? null,
         municipio_id: municipioId ?? null,
@@ -157,6 +159,7 @@ export function FormularioSitio({
         setDireccion("");
         setTelefono("");
         setHorario("");
+        setOfertas("");
         setImagenes("");
         setTipoSitioId(null);
         setProvinciaId(null);
@@ -316,6 +319,25 @@ export function FormularioSitio({
         value={descripcion}
         onChangeText={setDescripcion}
         placeholder="Breve descripción del sitio"
+        placeholderTextColor={colors.muted}
+        multiline
+        numberOfLines={3}
+        style={[
+          styles.input,
+          styles.textArea,
+          {
+            backgroundColor: colors.surface + "60",
+            color: colors.foreground,
+            borderColor: colors.border,
+          },
+        ]}
+      />
+
+      <Text style={[styles.label, { color: colors.muted }]}>Ofertas / Productos</Text>
+      <TextInput
+        value={ofertas}
+        onChangeText={setOfertas}
+        placeholder="Productos o ofertas (ej: pan, café, pizzas, 2x1 los martes)"
         placeholderTextColor={colors.muted}
         multiline
         numberOfLines={3}
