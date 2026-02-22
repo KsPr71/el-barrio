@@ -43,7 +43,7 @@ function groupByRole(
 
 export default function ModalScreen() {
   const colors = useColors();
-  const { members, loading } = useTeam();
+  const { members, loading, error } = useTeam();
 
   const groupedRoles = useMemo(() => groupByRole(members), [members]);
 
@@ -127,6 +127,10 @@ export default function ModalScreen() {
 
           {loading ? (
             <ActivityIndicator size="small" color={colors.primary} />
+          ) : error ? (
+            <Text style={[styles.devLine, { color: colors.muted }]}>
+              {error}
+            </Text>
           ) : groupedRoles.length > 0 ? (
             <View style={styles.rolesContainer}>
               {groupedRoles.map((group, i) => (

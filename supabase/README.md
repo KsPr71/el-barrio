@@ -16,6 +16,9 @@
    - `migrations/20260217000001_user_profiles_authenticated.sql` — authenticated puede guardar perfil (provincia/municipio para filtrar sitios).
    - `migrations/20260218000000_sitios_fecha_estado_terminos.sql` — fecha_cambio_estado, fecha_aceptado, acepto_terminos, expirar_suscripciones.
    - `migrations/20260219000000_sitios_localizacion_nullable.sql` — localizacion opcional (permite NULL).
+   - `migrations/20260220000000_storage_bucket_todos.sql` — bucket `todos` para imágenes de sitios (WebP).
+   - `migrations/20260220000001_storage_bucket_todos_update_delete.sql` — policies UPDATE/DELETE para `storage.objects` en bucket `todos`.
+   - `migrations/20260220000002_team_read_policy.sql` — policies SELECT para leer la tabla `team` (anon/authenticated).
 
 Después puedes insertar provincias y municipios en `provincia` y `municipio`.
 

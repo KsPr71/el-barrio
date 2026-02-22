@@ -1,4 +1,5 @@
 import { URL_TERMINOS_CONDICIONES } from "@/constants/const";
+import { ImageUploadSitio } from "@/components/image-upload-sitio";
 import { useColors } from "@/hooks/use-colors";
 import { useLocations } from "@/hooks/use-locations";
 import type {
@@ -611,21 +612,13 @@ export function FormularioSitio({
       {isAdmin && (
         <>
           <Text style={[styles.label, { color: colors.muted }]}>
-            Imágenes (URLs separadas por coma)
+            Imágenes
           </Text>
-          <TextInput
+          <ImageUploadSitio
+            nombreSitio={nombre.trim() || "sitio"}
             value={imagenes}
-            onChangeText={setImagenes}
-            placeholder="https://..."
-            placeholderTextColor={colors.muted}
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.surface,
-                color: colors.foreground,
-                borderColor: colors.border,
-              },
-            ]}
+            onChange={setImagenes}
+            disabled={loading}
           />
         </>
       )}
