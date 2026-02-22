@@ -22,6 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Collapsible } from "./ui/collapsible";
 
 export interface FormularioSitioProps {
   mode?: "create" | "edit";
@@ -291,9 +292,26 @@ export function FormularioSitio({
           },
         ]}
       />
-      <Text style={[styles.label, { color: colors.muted }]}>Horario</Text>
-      <HorarioInput value={horario} onChange={setHorario} />
-      <Text style={[styles.label, { color: colors.muted }]}>Descripción</Text>
+
+      <Collapsible title="Horario" iconName="clock.fill">
+        <Text
+          style={[
+            styles.label,
+            { color: colors.muted, paddingVertical: 12, marginVertical: 12 },
+          ]}
+        >
+          Horario
+        </Text>
+        <HorarioInput value={horario} onChange={setHorario} />
+      </Collapsible>
+      <Text
+        style={[
+          styles.label,
+          { color: colors.muted, marginBottom: 12, marginTop: 12 },
+        ]}
+      >
+        Descripción
+      </Text>
       <TextInput
         value={descripcion}
         onChangeText={setDescripcion}
@@ -311,7 +329,15 @@ export function FormularioSitio({
           },
         ]}
       />
-      <Text style={[styles.label, { color: colors.muted }]}>Tipo de sitio</Text>
+
+      <Text
+        style={[
+          styles.label,
+          { color: colors.muted, marginBottom: 12, marginTop: 12 },
+        ]}
+      >
+        Tipo de sitio
+      </Text>
       <TouchableOpacity
         onPress={() => setShowTipoPicker(true)}
         style={[
@@ -412,6 +438,7 @@ export function FormularioSitio({
           </Pressable>
         </Pressable>
       </Modal>
+
       <Text style={[styles.label, { color: colors.muted }]}>Provincia</Text>
       <TouchableOpacity
         onPress={() => setShowProvinciaPicker(true)}
