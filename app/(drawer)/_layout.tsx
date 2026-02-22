@@ -241,17 +241,19 @@ function CustomDrawerContent(props: any) {
           ]}
         >
           <TouchableOpacity onPress={() => router.push("/(drawer)/(tabs)")}>
-            <View
-              style={[
-                styles.featureIconWrap,
-                { backgroundColor: colors.primary },
-              ]}
-            >
-              <Text style={styles.featureEmoji}>🏘️</Text>
+            <View style={styles.featureHeaderRow}>
+              <View
+                style={[
+                  styles.featureIconWrap,
+                  { backgroundColor: colors.primary },
+                ]}
+              >
+                <Text style={styles.featureEmoji}>🏘️</Text>
+              </View>
+              <Text style={[styles.featureTitle, { color: colors.primary }]}>
+                Tu Comunidad
+              </Text>
             </View>
-            <Text style={[styles.featureTitle, { color: colors.primary }]}>
-              Tu Comunidad
-            </Text>
             <Text style={[styles.featureText, { color: colors.muted }]}>
               Descubre los sitios relevantes de tu barrio y comparte tu opinión.
             </Text>
@@ -264,18 +266,20 @@ function CustomDrawerContent(props: any) {
             { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
         >
-          <View
-            style={[
-              styles.featureIconWrap,
-              { backgroundColor: colors.secondary },
-            ]}
-          >
-            <Text style={styles.featureEmoji}>💬</Text>
-          </View>
           <TouchableOpacity onPress={handleEnviarWhatsAppObservaciones}>
-            <Text style={[styles.featureTitle, { color: colors.primary }]}>
-              Comunicación
-            </Text>
+            <View style={styles.featureHeaderRow}>
+              <View
+                style={[
+                  styles.featureIconWrap,
+                  { backgroundColor: colors.secondary },
+                ]}
+              >
+                <Text style={styles.featureEmoji}>💬</Text>
+              </View>
+              <Text style={[styles.featureTitle, { color: colors.primary }]}>
+                Comunicación
+              </Text>
+            </View>
             <Text style={[styles.featureText, { color: colors.muted }]}>
               Envíanos tus ideas, sugerencias y comentarios
             </Text>
@@ -291,20 +295,22 @@ function CustomDrawerContent(props: any) {
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
-            <View
-              style={[
-                styles.featureIconWrap,
-                { backgroundColor: colors.primary },
-              ]}
-            >
-              <Text style={styles.featureEmoji}>🤝</Text>
+            <View style={styles.featureHeaderRow}>
+              <View
+                style={[
+                  styles.featureIconWrap,
+                  { backgroundColor: colors.primary },
+                ]}
+              >
+                <Text style={styles.featureEmoji}>🤝</Text>
+              </View>
+              <Text style={[styles.featureTitle, { color: colors.primary }]}>
+                Administración
+              </Text>
             </View>
-            <Text style={[styles.featureTitle, { color: colors.primary }]}>
-              Administración
-            </Text>
             <Text style={[styles.featureText, { color: colors.muted }]}>
               ¿Deseas reflejar aquí tu negocio o emprendimiento destacado?
-              ¡Ponte en contacto con nosotros!
+              ¡Regístrate y agrega tu negocio!
             </Text>
           </View>
         </TouchableOpacity>
@@ -465,13 +471,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
   },
+  featureHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
   featureIconWrap: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
   },
   featureEmoji: {
     fontSize: 18,
@@ -479,7 +490,6 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 14,
     fontWeight: "600",
-    marginBottom: 4,
   },
   featureText: {
     fontSize: 12,

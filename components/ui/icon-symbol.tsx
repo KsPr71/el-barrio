@@ -42,6 +42,7 @@ const MAPPING = {
   "person.crop.rectangle.badge.plus.fill": "person-add",
   "map.fill": "map",
   "cross.case.circle.fill": "gavel",
+  "dollarsign.circle.fill": "attach-money",
   info: "info-outline",
   map: "map",
 } as IconMapping;

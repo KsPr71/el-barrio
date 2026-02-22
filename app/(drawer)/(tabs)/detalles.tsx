@@ -181,7 +181,8 @@ export default function DetallesScreen() {
     );
   }
 
-  const imagenPrincipalUrl = selectedImageUrl ?? getFirstImageUrl(sitio.imagenes);
+  const imagenPrincipalUrl =
+    selectedImageUrl ?? getFirstImageUrl(sitio.imagenes);
   const tipoSitio =
     sitio.tipo_sitio_id != null
       ? tipos.find((t) => t.id === sitio.tipo_sitio_id)
@@ -326,192 +327,189 @@ export default function DetallesScreen() {
               ) : null}
 
               {/* Comentario de la sección de ofertas */}
-              <Text className="text-base text-foreground leading-6">
-                Ofertas
-              </Text>
 
               {sitio.ofertas && sitio.ofertas.length > 0 ? (
-                <Collapsible title="Ofertas" iconName="chevron.right">
-                  <View className="mt-2">
-                    <Text className="text-base text-foreground">
-                      {sitio.ofertas}
-                    </Text>
-                  </View>
-                </Collapsible>
-              ) : null}
-
-              {/* Comentario de la sección de contactos */}
-              {sitio.telefono ? (
-                <View
-                  className="rounded-2xl p-4"
-                  style={{
-                    backgroundColor: colors.surface,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                  }}
-                >
-                  <Text className="text-xs text-muted mb-3 font-medium uppercase tracking-wide">
-                    Contactar
-                  </Text>
-                  <View className="gap-3">
-                    <TouchableOpacity
-                      onPress={() =>
-                        Linking.openURL(
-                          `tel:${String(sitio.telefono).replace(/\D/g, "")}`,
-                        )
-                      }
-                      activeOpacity={0.7}
-                      className="flex-row items-center gap-3 rounded-xl py-3 px-4"
-                      style={{ backgroundColor: colors.background }}
-                    >
-                      <View
-                        className="rounded-full p-2"
-                        style={{ backgroundColor: colors.primary + "20" }}
-                      >
-                        <IconSymbol
-                          name="phone.fill"
-                          size={22}
-                          color={colors.primary}
-                        />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-xs text-muted">Teléfono</Text>
-                        <Text
-                          className="text-base font-semibold"
-                          style={{ color: colors.foreground }}
-                        >
-                          {sitio.telefono}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => {
-                        const num = String(sitio.telefono).replace(/\D/g, "");
-                        const whatsappNum = num.startsWith("53")
-                          ? num
-                          : `53${num}`;
-                        Linking.openURL(`https://wa.me/${whatsappNum}`);
-                      }}
-                      activeOpacity={0.7}
-                      className="flex-row items-center gap-3 rounded-xl py-3 px-4"
-                      style={{ backgroundColor: colors.background }}
-                    >
-                      <View
-                        className="rounded-full p-2"
-                        style={{ backgroundColor: "#25D36620" }}
-                      >
-                        <IconSymbol
-                          name="message.fill"
-                          size={22}
-                          color="#25D366"
-                        />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-xs text-muted">WhatsApp</Text>
-                        <Text
-                          className="text-base font-semibold"
-                          style={{ color: "#25D366" }}
-                        >
-                          Enviar mensaje
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : null}
-
-              {sitio.localizacion ? (
-                <View className="mt-2">
+                <Collapsible title="Ofertas" iconName="dollarsign.circle.fill">
                   <View
-                    className="rounded-2xl overflow-hidden mb-3"
+                    className="rounded-2xl p-4"
                     style={{
                       backgroundColor: colors.surface,
                       borderWidth: 1,
                       borderColor: colors.border,
                     }}
                   >
-                    <View className="flex-row items-stretch p-4 gap-4">
-                      <View className="flex-1 gap-1 min-w-0">
-                        <View className="flex-row items-center gap-2">
-                          <View
-                            className="rounded-full p-2"
-                            style={{ backgroundColor: colors.primary + "20" }}
+                    <View className="mt-2">
+                      <Text className="text-base text-foreground">
+                        {sitio.ofertas}
+                      </Text>
+                    </View>
+                  </View>
+                </Collapsible>
+              ) : null}
+
+              {/* Comentario de la sección de contactos */}
+
+              {sitio.telefono ? (
+                <Collapsible title="Contacto" iconName="person.fill">
+                  <View
+                    className="rounded-2xl p-4"
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <View className="gap-3">
+                      <TouchableOpacity
+                        onPress={() =>
+                          Linking.openURL(
+                            `tel:${String(sitio.telefono).replace(/\D/g, "")}`,
+                          )
+                        }
+                        activeOpacity={0.7}
+                        className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                        style={{ backgroundColor: colors.background }}
+                      >
+                        <View
+                          className="rounded-full p-2"
+                          style={{ backgroundColor: colors.primary + "20" }}
+                        >
+                          <IconSymbol
+                            name="phone.fill"
+                            size={22}
+                            color={colors.primary}
+                          />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-xs text-muted">Teléfono</Text>
+                          <Text
+                            className="text-base font-semibold"
+                            style={{ color: colors.foreground }}
                           >
-                            <IconSymbol
-                              name="location.fill"
-                              size={20}
-                              color={colors.primary}
-                            />
-                          </View>
-                          <Text className="text-xs text-muted font-medium uppercase tracking-wide">
-                            Ubicación
+                            {sitio.telefono}
                           </Text>
                         </View>
-                        {sitio.direccion ? (
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => {
+                          const num = String(sitio.telefono).replace(/\D/g, "");
+                          const whatsappNum = num.startsWith("53")
+                            ? num
+                            : `53${num}`;
+                          Linking.openURL(`https://wa.me/${whatsappNum}`);
+                        }}
+                        activeOpacity={0.7}
+                        className="flex-row items-center gap-3 rounded-xl py-3 px-4"
+                        style={{ backgroundColor: colors.background }}
+                      >
+                        <View
+                          className="rounded-full p-2"
+                          style={{ backgroundColor: "#25D36620" }}
+                        >
+                          <IconSymbol
+                            name="message.fill"
+                            size={22}
+                            color="#25D366"
+                          />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-xs text-muted">WhatsApp</Text>
                           <Text
-                            className="text-base text-foreground mt-1"
-                            numberOfLines={3}
+                            className="text-base font-semibold"
+                            style={{ color: "#25D366" }}
                           >
+                            Enviar mensaje
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Collapsible>
+              ) : null}
+
+              {sitio.localizacion ? (
+                <Collapsible title="Ubicación" iconName="location.fill">
+                  <View
+                    className="rounded-2xl p-4"
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <View className="gap-3">
+                      <View
+                        className="rounded-xl p-3"
+                        style={{ backgroundColor: colors.background }}
+                      >
+                        <Text className="text-xs text-muted mb-1">Dirección</Text>
+                        {sitio.direccion ? (
+                          <Text className="text-base text-foreground">
                             {sitio.direccion}
                           </Text>
                         ) : (
-                          <Text className="text-sm text-muted mt-1">
-                            Ver en mapa
+                          <Text className="text-sm text-muted">
+                            Sin dirección especificada
                           </Text>
                         )}
                       </View>
-                    </View>
-                  </View>
 
-                  <Collapsible title="Ver en mapa" iconName="map.fill">
-                    <View className="gap-3">
-                      <View className="flex-row items-center justify-between gap-3 px-1">
-                        <TouchableOpacity
-                          onPress={() =>
-                            Alert.alert(
-                              "Aviso",
-                              "Algunas funcionalidades de Google Maps pueden no estar disponibles. Abra Google Maps si desea más información.",
-                            )
-                          }
-                          activeOpacity={0.7}
-                          className="flex-row items-center gap-1"
-                        >
-                          <IconSymbol
-                            name="exclamationmark.triangle.fill"
-                            size={18}
-                            color={colors.primary}
-                          />
-                        </TouchableOpacity>
-                        <View className="flex-row items-center gap-2">
+                      <View
+                        className="rounded-xl p-3"
+                        style={{ backgroundColor: colors.background }}
+                      >
+                        <Text className="text-xs text-muted mb-2">
+                          Ver en el mapa
+                        </Text>
+
+                        <View className="flex-row items-center justify-between gap-3">
                           <TouchableOpacity
-                            onPress={() => {
-                              const loc = sitio.localizacion;
-                              if (loc) Linking.openURL(buildGoogleMapsUrl(loc));
-                            }}
+                            onPress={() =>
+                              Alert.alert(
+                                "Aviso",
+                                "Algunas funcionalidades de Google Maps pueden no estar disponibles. Abra Google Maps si desea más información.",
+                              )
+                            }
                             activeOpacity={0.7}
-                            className="rounded-lg px-3 py-2"
-                            style={{ backgroundColor: colors.primary }}
+                            className="flex-row items-center gap-1"
                           >
-                            <Text
-                              className="text-[11px] font-semibold"
-                              style={{ color: "#FFFFFF" }}
-                            >
-                              Google Maps
-                            </Text>
+                            <IconSymbol
+                              name="exclamationmark.triangle.fill"
+                              size={18}
+                              color={colors.primary}
+                            />
                           </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => setMapReloadKey((k) => k + 1)}
-                            activeOpacity={0.7}
-                            className="rounded-lg px-3 py-2 border"
-                            style={{ borderColor: colors.border }}
-                          >
-                            <Text
-                              className="text-[11px]"
-                              style={{ color: colors.muted }}
+                          <View className="flex-row items-center gap-2">
+                            <TouchableOpacity
+                              onPress={() => {
+                                const loc = sitio.localizacion;
+                                if (loc) Linking.openURL(buildGoogleMapsUrl(loc));
+                              }}
+                              activeOpacity={0.7}
+                              className="rounded-lg px-3 py-2"
+                              style={{ backgroundColor: colors.primary }}
                             >
-                              Resetear mapa
-                            </Text>
-                          </TouchableOpacity>
+                              <Text
+                                className="text-[11px] font-semibold"
+                                style={{ color: "#FFFFFF" }}
+                              >
+                                Google Maps
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => setMapReloadKey((k) => k + 1)}
+                              activeOpacity={0.7}
+                              className="rounded-lg px-3 py-2 border"
+                              style={{ borderColor: colors.border }}
+                            >
+                              <Text
+                                className="text-[11px]"
+                                style={{ color: colors.muted }}
+                              >
+                                Resetear mapa
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
 
@@ -526,8 +524,8 @@ export default function DetallesScreen() {
                         />
                       </TouchableOpacity>
                     </View>
-                  </Collapsible>
-                </View>
+                  </View>
+                </Collapsible>
               ) : null}
 
               <Separador />
