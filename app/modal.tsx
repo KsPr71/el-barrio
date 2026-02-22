@@ -2,9 +2,12 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconImage } from "@/components/ui/icon-image";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import { useTeam } from "@/hooks/use-team";
 import Constants from "expo-constants";
 import { router } from "expo-router";
+import { useMemo } from "react";
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
@@ -13,8 +16,36 @@ import {
   View,
 } from "react-native";
 
+const ROLE_ORDER = ["Desarrollador", "Diseño", "Beta tester", "Colaborador"];
+
+function groupByRole(
+  members: { nombre: string; role: string }[],
+): { role: string; members: string[] }[] {
+  const map = new Map<string, string[]>();
+  for (const m of members) {
+    const key = m.role.trim();
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(m.nombre);
+  }
+  const result: { role: string; members: string[] }[] = [];
+  for (const role of ROLE_ORDER) {
+    const found = Array.from(map.entries()).find(([r]) =>
+      r.toLowerCase().includes(role.toLowerCase()),
+    );
+    if (found) {
+      result.push({ role: found[0], members: found[1] });
+      map.delete(found[0]);
+    }
+  }
+  map.forEach((members, role) => result.push({ role, members }));
+  return result;
+}
+
 export default function ModalScreen() {
   const colors = useColors();
+  const { members, loading } = useTeam();
+
+  const groupedRoles = useMemo(() => groupByRole(members), [members]);
 
   return (
     <ScreenContainer
@@ -61,40 +92,89 @@ export default function ModalScreen() {
           style={[
             styles.section,
             {
-              backgroundColor: colors.surface,
+              backgroundColor: colors.surface + "10",
               borderColor: colors.border,
               borderWidth: 1,
             },
           ]}
         >
-          <IconSymbol
-            name="person.crop.rectangle.badge.plus.fill"
-            size={30}
-            color={colors.primary}
-          />
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              alignContent: "center",
+              justifyContent: "center",
+              gap: 10,
+              paddingBottom: 10,
+            }}
+          >
+            <IconSymbol
+              name="person.crop.rectangle.badge.plus.fill"
+              size={30}
+              color={colors.primary}
+            />
 
-          <Text style={styles.headerTitle}>Equipo de Trabajo</Text>
+            <Text style={styles.headerTitle}>Equipo de Trabajo</Text>
+          </View>
+          <View
+            style={{
+              width: "100%",
+              height: 1,
+              backgroundColor: colors.border,
+              marginBottom: 10,
+            }}
+          ></View>
 
-          <Text style={[styles.devLine, { color: colors.foreground }]}>
-            <Text style={{ color: colors.muted }}>Desarrollador</Text>
-            {" > "}
-            Jorge A. Casares Delgado
-          </Text>
-          <Text style={[styles.devLine, { color: colors.foreground }]}>
-            <Text style={{ color: colors.muted }}>Revision</Text>
-            {" > "}
-            Jeidy Noda Gonzalez
-          </Text>
-          <Text style={[styles.devLine, { color: colors.foreground }]}>
-            <Text style={{ color: colors.muted }}>Beta Tester</Text>
-            {" > "}
-            Ing. Raisa Perdomo Miranda
-          </Text>
-          <Text style={[styles.devLine, { color: colors.foreground }]}>
-            <Text style={{ color: colors.muted }}>Beta Tester</Text>
-            {" > "}
-            Ing. Idalni Veliz Ramirez
-          </Text>
+          {loading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : groupedRoles.length > 0 ? (
+            <View style={styles.rolesContainer}>
+              {groupedRoles.map((group, i) => (
+                <View
+                  key={group.role}
+                  style={[
+                    styles.roleGroup,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      marginBottom: i < groupedRoles.length - 1 ? 14 : 0,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.roleBadge,
+                      { backgroundColor: colors.surface + "40" },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.roleLabel, { color: colors.primary }]}
+                      numberOfLines={1}
+                    >
+                      {group.role}
+                    </Text>
+                  </View>
+                  <View style={styles.membersList}>
+                    {group.members.map((nombre) => (
+                      <Text
+                        key={nombre}
+                        style={[
+                          styles.memberName,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        {nombre}
+                      </Text>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={[styles.devLine, { color: colors.muted }]}>
+              No hay miembros del equipo cargados
+            </Text>
+          )}
         </View>
         <View
           style={[
@@ -193,5 +273,36 @@ const styles = StyleSheet.create({
   devLine: {
     fontSize: 15,
     fontWeight: "500",
+  },
+  rolesContainer: {
+    width: "100%",
+    marginTop: 4,
+  },
+  roleGroup: {
+    width: "100%",
+    borderRadius: 12,
+    //borderWidth: 1,
+    overflow: "hidden",
+    padding: 0,
+  },
+  roleBadge: {
+    //paddingVertical: 8,
+    paddingHorizontal: 14,
+    alignSelf: "stretch",
+  },
+  roleLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  membersList: {
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+  },
+  memberName: {
+    fontSize: 15,
+    fontWeight: "500",
+    marginBottom: 4,
   },
 });
