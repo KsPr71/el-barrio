@@ -261,6 +261,15 @@ export default function DetallesScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+        ) : null}
+        {/* ScrollView siempre montado para que useScrollOffset tenga ref válida (evita warning de Reanimated) */}
+        {isMapExpanded && sitio.localizacion ? (
+          <Animated.ScrollView
+            ref={scrollRef}
+            style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
+          >
+            <View />
+          </Animated.ScrollView>
         ) : (
           <Animated.ScrollView
             ref={scrollRef}

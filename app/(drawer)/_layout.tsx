@@ -28,9 +28,7 @@ function HeaderRightWithChip() {
   const pathname = usePathname();
   const { chipVisible, categoryLabel } = useHeaderCategory();
   const isOtherTab =
-    pathname.includes("/detalles") ||
-    pathname.includes("/profile") ||
-    pathname.includes("/colaboracion");
+    pathname.includes("/detalles") || pathname.includes("/profile");
   const showChip = Boolean(chipVisible && categoryLabel && !isOtherTab);
 
   // Animación tipo "Dynamic Island": width 0 <-> width real (medida)
@@ -399,7 +397,6 @@ export default function DrawerLayout() {
           borderBottomColor: "#FBBF24",
           borderBottomWidth: 3,
           height: 110,
-          paddingBottom: 10,
         },
         headerTintColor: "#FFFFFF",
         headerTitleStyle: {
