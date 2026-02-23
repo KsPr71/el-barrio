@@ -16,7 +16,8 @@
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "qr": "node scripts/generate_qr.mjs"
+    "qr": "node scripts/generate_qr.mjs",
+    "postinstall": "node -e \"try{require('fs').mkdirSync('node_modules/.cache/nativewind',{recursive:true});require('child_process').execSync('npx tailwindcss -i ./global.css -o ./node_modules/.cache/nativewind/global.css.native.css',{stdio:'ignore'});}catch(e){}\""
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -67,6 +68,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-css-interop": "0.2.1",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-maps": "1.20.1",
     "react-native-reanimated": "~4.1.6",
