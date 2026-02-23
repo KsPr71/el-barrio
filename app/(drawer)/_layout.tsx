@@ -2,6 +2,7 @@ import { IconImage } from "@/components/ui/icon-image";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useHeaderCategory } from "@/contexts/header-category-context";
 import { useColors } from "@/hooks/use-colors";
+import { useProfile } from "@/hooks/use-profile";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import Constants from "expo-constants";
 import { router, usePathname } from "expo-router";
@@ -134,6 +135,8 @@ function HeaderRightWithChip() {
 function CustomDrawerContent(props: any) {
   const colors = useColors();
   const pathname = usePathname();
+  const { profile } = useProfile();
+  const displayName = profile?.name?.trim() || "Usuario";
 
   const isDetallesActive = pathname.includes("/detalles");
   const isProfileActive = pathname.includes("/profile");
@@ -181,6 +184,14 @@ function CustomDrawerContent(props: any) {
             </Text>
           </View>
         </View>
+      </View>
+      <View style={styles.drawerWelcomeWrap}>
+        <Text
+          style={[styles.drawerWelcome, { color: colors.muted }]}
+          numberOfLines={1}
+        >
+          Usuario{displayName ? `: ${displayName}` : ""}
+        </Text>
       </View>
       {/* Páginas del drawer con navegación explícita */}
       <DrawerItem
@@ -471,6 +482,15 @@ const styles = StyleSheet.create({
   drawerSubtitle: {
     fontSize: 14,
     opacity: 0.9,
+  },
+  drawerWelcomeWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  drawerWelcome: {
+    fontSize: 12,
+    fontWeight: "bold",
   },
   featureSection: {
     marginTop: 16,

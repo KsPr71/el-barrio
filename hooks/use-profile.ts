@@ -59,17 +59,28 @@ export function useProfile() {
         .maybeSingle();
 
       if (err) throw err;
+      const metaName =
+        (supabaseUser?.user_metadata?.display_name as string | undefined) ??
+        (supabaseUser?.user_metadata?.full_name as string | undefined) ??
+        "";
       if (data) {
         setProfile({
-          name: data.name ?? "",
+          name: (data.name ?? metaName) || "",
           email: data.email ?? "",
           province: data.province ?? "",
           municipality: data.municipality ?? "",
         });
       } else if (supabaseUser && supabaseProfile) {
         setProfile({
-          name: supabaseProfile.name ?? "",
+          name: (supabaseProfile.name ?? metaName) || "",
           email: supabaseProfile.email ?? supabaseUser.email ?? "",
+          province: "",
+          municipality: "",
+        });
+      } else if (supabaseUser) {
+        setProfile({
+          name: metaName || "",
+          email: supabaseUser.email ?? "",
           province: "",
           municipality: "",
         });
