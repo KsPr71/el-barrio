@@ -1,6 +1,8 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Stack } from "expo-router";
+import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -40,15 +42,21 @@ export default function RootLayout() {
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
   const [frame, setFrame] = useState<Rect>(initialFrame);
 
+  const [fontsLoaded, fontError] = useFonts({
+    ...MaterialCommunityIcons.font,
+  });
+
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
     initManusRuntime();
   }, []);
 
-  // Ocultar splash cuando el layout esté montado (evita crash al iniciar en release)
+  // Ocultar splash cuando fuentes (p. ej. iconos Facebook/Instagram/Web) estén cargadas o falle la carga
   useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
 
   const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
     setInsets(metrics.insets);

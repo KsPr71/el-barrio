@@ -7,7 +7,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useLocations } from "@/hooks/use-locations";
 import { useProfile } from "@/hooks/use-profile";
 import { useSitiosRelevantes } from "@/hooks/use-sitios-relevantes";
-import { useTiposSitio } from "@/hooks/use-tipos-sitio";
+import { useTiposSitio, type TipoSitio } from "@/hooks/use-tipos-sitio";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -51,18 +51,6 @@ export default function HomeScreen() {
   >(undefined);
   const [showProvinciaModal, setShowProvinciaModal] = useState(false);
   const { setHeaderChip, setHeaderCategoryLabel } = useHeaderCategory();
-
-  // Etiqueta de la categoría seleccionada para el chip del header
-  const selectedCategoryLabel = useMemo(() => {
-    if (selectedTipoId == null) return "Todas";
-    const tipo = tipos.find((t) => t.id === selectedTipoId);
-    return tipo?.tipo ?? "Todas";
-  }, [selectedTipoId, tipos]);
-
-  // Mantener siempre la etiqueta de categoría en el header (así el chip muestra la selección actual)
-  useEffect(() => {
-    setHeaderCategoryLabel(selectedCategoryLabel);
-  }, [selectedCategoryLabel, setHeaderCategoryLabel]);
 
   const showChipInHeader = useCallback(() => {
     setHeaderChip(true);
@@ -186,18 +174,34 @@ export default function HomeScreen() {
 
   const totalSitios = sitiosPorProvincia.length;
 
-  const tiposDisponibles = useMemo(() => {
-    // Si aún no hay sitios cargados (por ejemplo, solo tenemos categorías desde SQLite),
-    // mostramos todas las categorías disponibles para que el usuario pueda filtrar desde ya.
-    if (sitiosPorProvincia.length === 0) return tipos;
-
+  // Categorías para el carrusel: si ya tenemos tipos con nombres, usarlos;
+  // si no (tipos aún cargando), derivar desde los sitios para pintar el carrusel al instante.
+  const tiposDisponibles = useMemo((): TipoSitio[] => {
     const idsPresentes = new Set(
       sitiosPorProvincia
         .map((s) => s.tipo_sitio_id)
         .filter((id): id is number => id != null),
     );
-    return tipos.filter((t) => idsPresentes.has(t.id));
+    if (idsPresentes.size === 0) return tipos;
+
+    const conNombres = tipos.filter((t) => idsPresentes.has(t.id));
+    if (conNombres.length > 0) return conNombres;
+
+    return Array.from(idsPresentes)
+      .sort((a, b) => a - b)
+      .map((id) => ({ id, tipo: `Categoría ${id}`, descripcion: null }));
   }, [sitiosPorProvincia, tipos]);
+
+  const selectedCategoryLabel = useMemo(() => {
+    if (selectedTipoId == null) return "Todas";
+    const tipo = tiposDisponibles.find((t) => t.id === selectedTipoId);
+    return tipo?.tipo ?? "Todas";
+  }, [selectedTipoId, tiposDisponibles]);
+
+  // Mantener siempre la etiqueta de categoría en el header (así el chip muestra la selección actual)
+  useEffect(() => {
+    setHeaderCategoryLabel(selectedCategoryLabel);
+  }, [selectedCategoryLabel, setHeaderCategoryLabel]);
 
   // Agrupar sitios por categoría (tipo_sitio_id) y ordenar por puntuación dentro de cada grupo
   const sitiosAgrupados = useMemo(() => {
@@ -295,7 +299,7 @@ export default function HomeScreen() {
                 <IconSymbol name="location.fill" size={18} color="#FFF" />
               </TouchableOpacity>
             </View>
-            {tiposDisponibles.length > 0 && !loading && !error && (
+            {tiposDisponibles.length > 0 && sitiosPorProvincia.length > 0 && (
               <TipoSitioChipCarousel
                 tipos={tiposDisponibles}
                 selectedTipoId={selectedTipoId}
