@@ -4,6 +4,7 @@ import {
   getCachedSitiosRelevantes,
   replaceCachedSitiosRelevantes,
 } from "@/lib/offline-sitios-db";
+import { useSyncStatus } from "@/contexts/sync-status-context";
 
 /** Cache en memoria para no tener que consultar la BD en cada búsqueda (p. ej. en "Aquí hay") */
 let cachedSitiosRelevantes: SitioRelevante[] | null = null;
@@ -43,6 +44,7 @@ function getErrorMessage(e: unknown, fallback: string): string {
 }
 
 export function useSitiosRelevantes() {
+  const { startSync, endSync } = useSyncStatus();
   const [sitios, setSitios] = useState<SitioRelevante[]>(() => cachedSitiosRelevantes ?? []);
   // loading: mientras no hay cache persistente ni en memoria, mostramos loader.
   const [loading, setLoading] = useState(() => cachedSitiosRelevantes === null);
@@ -114,13 +116,24 @@ export function useSitiosRelevantes() {
 
   const fetchSitios = useCallback(async () => {
     const requestId = ++requestIdRef.current;
+    const syncKey = `sitios_${requestId}`;
+    startSync(syncKey);
+    let finished = false;
+    const finish = (ok: boolean) => {
+      if (finished) return;
+      finished = true;
+      endSync(syncKey, ok);
+    };
     setLoading(true);
     setLoadingMore(false);
     setError(null);
     try {
       // 1) Cargar rápido la primera página para pintar la pantalla
       const first = await fetchPage(0, PAGE_SIZE - 1);
-      if (requestIdRef.current !== requestId) return;
+      if (requestIdRef.current !== requestId) {
+        finish(false);
+        return;
+      }
       // Ordenar primera página por tipo_sitio_id y luego por puntuación
       first.sort((a, b) => {
         if (a.tipo_sitio_id !== b.tipo_sitio_id) {
@@ -144,16 +157,25 @@ export function useSitiosRelevantes() {
     }
 
     // 2) Cargar el resto en segundo plano (sin bloquear UI)
-    if (requestIdRef.current !== requestId) return;
+    if (requestIdRef.current !== requestId) {
+      finish(false);
+      return;
+    }
     setLoadingMore(true);
     try {
       let offset = PAGE_SIZE;
       // Seguir mientras sigan llegando páginas completas
       const allPages: SitioRelevante[] = [];
       for (;;) {
-        if (requestIdRef.current !== requestId) return;
+        if (requestIdRef.current !== requestId) {
+          finish(false);
+          return;
+        }
         const page = await fetchPage(offset, offset + PAGE_SIZE - 1);
-        if (requestIdRef.current !== requestId) return;
+        if (requestIdRef.current !== requestId) {
+          finish(false);
+          return;
+        }
         if (page.length === 0) break;
         allPages.push(...page);
         if (page.length < PAGE_SIZE) break;
@@ -200,7 +222,8 @@ export function useSitiosRelevantes() {
         console.warn("[useSitiosRelevantes] error al guardar cache SQLite:", e);
       });
     }
-  }, [fetchPage]);
+    finish(true);
+  }, [fetchPage, startSync, endSync]);
 
   useEffect(() => {
     let cancelled = false;

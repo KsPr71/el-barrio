@@ -1,6 +1,7 @@
 import { IconImage } from "@/components/ui/icon-image";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useHeaderCategory } from "@/contexts/header-category-context";
+import { useSyncStatus } from "@/contexts/sync-status-context";
 import { useColors } from "@/hooks/use-colors";
 import { useProfile } from "@/hooks/use-profile";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
@@ -9,6 +10,7 @@ import { router, usePathname } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Linking,
   StyleSheet,
@@ -27,6 +29,7 @@ function HeaderRightWithChip() {
   const colors = useColors();
   const pathname = usePathname();
   const { chipVisible, categoryLabel } = useHeaderCategory();
+  const { isSyncing, justUpdated } = useSyncStatus();
   const isOtherTab =
     pathname.includes("/detalles") || pathname.includes("/profile");
   const showChip = Boolean(chipVisible && categoryLabel && !isOtherTab);
@@ -91,6 +94,16 @@ function HeaderRightWithChip() {
 
   return (
     <View style={styles.headerRight}>
+      {/* Estado de sincronización: spinner mientras actualiza, check al terminar */}
+      {isSyncing ? (
+        <View style={styles.syncIconWrap}>
+          <ActivityIndicator size="small" color={colors.secondary ?? "#FBBF24"} />
+        </View>
+      ) : justUpdated ? (
+        <View style={styles.syncIconWrap}>
+          <IconSymbol name="checkmark.circle.fill" size={18} color={colors.secondary ?? "#FBBF24"} />
+        </View>
+      ) : null}
       {/* Medidor invisible para calcular el ancho real del chip */}
       {categoryLabel ? (
         <View
@@ -438,6 +451,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginRight: 16,
+  },
+  syncIconWrap: {
+    width: 22,
+    height: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerChipIsland: {
     borderRadius: 999,

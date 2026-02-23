@@ -7,6 +7,23 @@ import type { Municipio, Provincia } from "@/hooks/use-locations";
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
+// SQLite no permite transacciones anidadas. Serializamos TODAS las escrituras.
+let writeQueue: Promise<void> = Promise.resolve();
+function enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
+  const run = writeQueue.then(task, task);
+  writeQueue = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
+function isLockedError(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const msg = String((e as { message?: unknown }).message ?? e);
+  return msg.includes("database is locked");
+}
+
 async function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (!dbPromise) {
     dbPromise = SQLite.openDatabaseAsync("por-el-barrio-cache.db");
@@ -151,64 +168,63 @@ export async function replaceCachedSitiosRelevantes(
   sitios: SitioRelevante[],
 ): Promise<void> {
   if (!sitios || sitios.length === 0) return;
-  await ensureTables();
-  const db = await getDb();
-
-  await db.execAsync("BEGIN TRANSACTION;");
-  try {
-    await db.execAsync("DELETE FROM sitios_relevantes_cache;");
-    for (const sitio of sitios) {
-      await db.runAsync(
-        `
-          INSERT OR REPLACE INTO sitios_relevantes_cache (
-            id,
-            nombre,
-            localizacion,
-            descripcion,
-            imagenes,
-            ofertas,
-            menus,
-            tipo_sitio_id,
-            direccion,
-            telefono,
-            contador_opiniones,
-            provincia_id,
-            municipio_id,
-            promedio_puntuacion,
-            horario,
-            facebook_link,
-            instagram_link,
-            sitio_web
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-        [
-          sitio.id,
-          sitio.nombre,
-          sitio.localizacion,
-          sitio.descripcion,
-          sitio.imagenes,
-          sitio.ofertas,
-          sitio.menus ? JSON.stringify(sitio.menus) : null,
-          sitio.tipo_sitio_id,
-          sitio.direccion,
-          sitio.telefono,
-          sitio.contador_opiniones,
-          sitio.provincia_id,
-          sitio.municipio_id,
-          sitio.promedio_puntuacion,
-          sitio.horario,
-          sitio.facebook_link,
-          sitio.instagram_link,
-          sitio.sitio_web,
-        ],
-      );
+  await enqueueWrite(async () => {
+    await ensureTables();
+    const db = await getDb();
+    try {
+      await db.execAsync("DELETE FROM sitios_relevantes_cache;");
+      for (const sitio of sitios) {
+        await db.runAsync(
+          `
+            INSERT OR REPLACE INTO sitios_relevantes_cache (
+              id,
+              nombre,
+              localizacion,
+              descripcion,
+              imagenes,
+              ofertas,
+              menus,
+              tipo_sitio_id,
+              direccion,
+              telefono,
+              contador_opiniones,
+              provincia_id,
+              municipio_id,
+              promedio_puntuacion,
+              horario,
+              facebook_link,
+              instagram_link,
+              sitio_web
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            sitio.id,
+            sitio.nombre,
+            sitio.localizacion,
+            sitio.descripcion,
+            sitio.imagenes,
+            sitio.ofertas,
+            sitio.menus ? JSON.stringify(sitio.menus) : null,
+            sitio.tipo_sitio_id,
+            sitio.direccion,
+            sitio.telefono,
+            sitio.contador_opiniones,
+            sitio.provincia_id,
+            sitio.municipio_id,
+            sitio.promedio_puntuacion,
+            sitio.horario,
+            sitio.facebook_link,
+            sitio.instagram_link,
+            sitio.sitio_web,
+          ],
+        );
+      }
+    } catch (e) {
+      if (!isLockedError(e)) {
+        console.warn("[offline-sitios-db] error al guardar cache:", e);
+      }
     }
-    await db.execAsync("COMMIT;");
-  } catch (e) {
-    await db.execAsync("ROLLBACK;");
-    // No propagamos el error para no romper la UI; solo log.
-    console.warn("[offline-sitios-db] error al guardar cache:", e);
-  }
+  });
 }
 
 export async function getCachedSitioRelevanteById(
@@ -296,22 +312,23 @@ export async function getCachedTiposSitio(): Promise<TipoSitio[]> {
 
 export async function replaceCachedTiposSitio(tipos: TipoSitio[]): Promise<void> {
   if (!tipos) return;
-  await ensureTables();
-  const db = await getDb();
-  await db.execAsync("BEGIN TRANSACTION;");
-  try {
-    await db.execAsync("DELETE FROM tipos_sitio_cache;");
-    for (const t of tipos) {
-      await db.runAsync(
-        `INSERT OR REPLACE INTO tipos_sitio_cache (id, tipo, descripcion) VALUES (?, ?, ?)`,
-        [t.id, t.tipo, t.descripcion],
-      );
+  await enqueueWrite(async () => {
+    await ensureTables();
+    const db = await getDb();
+    try {
+      await db.execAsync("DELETE FROM tipos_sitio_cache;");
+      for (const t of tipos) {
+        await db.runAsync(
+          `INSERT OR REPLACE INTO tipos_sitio_cache (id, tipo, descripcion) VALUES (?, ?, ?)`,
+          [t.id, t.tipo, t.descripcion],
+        );
+      }
+    } catch (e) {
+      if (!isLockedError(e)) {
+        console.warn("[offline-sitios-db] error al guardar tipos_sitio_cache:", e);
+      }
     }
-    await db.execAsync("COMMIT;");
-  } catch (e) {
-    await db.execAsync("ROLLBACK;");
-    console.warn("[offline-sitios-db] error al guardar tipos_sitio_cache:", e);
-  }
+  });
 }
 
 export async function getCachedOpinionesBySitioId(
@@ -336,26 +353,27 @@ export async function replaceCachedOpinionesForSitio(
   opiniones: Opinion[],
 ): Promise<void> {
   if (!opiniones) return;
-  await ensureTables();
-  const db = await getDb();
-  await db.execAsync("BEGIN TRANSACTION;");
-  try {
-    await db.runAsync(`DELETE FROM opiniones_cache WHERE sitio_id = ?`, [sitioId]);
-    for (const o of opiniones) {
-      await db.runAsync(
-        `
-          INSERT OR REPLACE INTO opiniones_cache (
-            id, sitio_id, calificacion, comentario, autor_texto, creado_at
-          ) VALUES (?, ?, ?, ?, ?, ?)
-        `,
-        [o.id, o.sitio_id, o.calificacion, o.comentario, o.autor_texto, o.creado_at],
-      );
+  await enqueueWrite(async () => {
+    await ensureTables();
+    const db = await getDb();
+    try {
+      await db.runAsync(`DELETE FROM opiniones_cache WHERE sitio_id = ?`, [sitioId]);
+      for (const o of opiniones) {
+        await db.runAsync(
+          `
+            INSERT OR REPLACE INTO opiniones_cache (
+              id, sitio_id, calificacion, comentario, autor_texto, creado_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+          `,
+          [o.id, o.sitio_id, o.calificacion, o.comentario, o.autor_texto, o.creado_at],
+        );
+      }
+    } catch (e) {
+      if (!isLockedError(e)) {
+        console.warn("[offline-sitios-db] error al guardar opiniones_cache:", e);
+      }
     }
-    await db.execAsync("COMMIT;");
-  } catch (e) {
-    await db.execAsync("ROLLBACK;");
-    console.warn("[offline-sitios-db] error al guardar opiniones_cache:", e);
-  }
+  });
 }
 
 export async function getCachedProvincias(): Promise<Provincia[]> {
@@ -369,22 +387,23 @@ export async function getCachedProvincias(): Promise<Provincia[]> {
 
 export async function replaceCachedProvincias(provincias: Provincia[]): Promise<void> {
   if (!provincias) return;
-  await ensureTables();
-  const db = await getDb();
-  await db.execAsync("BEGIN TRANSACTION;");
-  try {
-    await db.execAsync("DELETE FROM provincia_cache;");
-    for (const p of provincias) {
-      await db.runAsync(
-        `INSERT OR REPLACE INTO provincia_cache (id, nombre) VALUES (?, ?)`,
-        [p.id, p.nombre],
-      );
+  await enqueueWrite(async () => {
+    await ensureTables();
+    const db = await getDb();
+    try {
+      await db.execAsync("DELETE FROM provincia_cache;");
+      for (const p of provincias) {
+        await db.runAsync(
+          `INSERT OR REPLACE INTO provincia_cache (id, nombre) VALUES (?, ?)`,
+          [p.id, p.nombre],
+        );
+      }
+    } catch (e) {
+      if (!isLockedError(e)) {
+        console.warn("[offline-sitios-db] error al guardar provincia_cache:", e);
+      }
     }
-    await db.execAsync("COMMIT;");
-  } catch (e) {
-    await db.execAsync("ROLLBACK;");
-    console.warn("[offline-sitios-db] error al guardar provincia_cache:", e);
-  }
+  });
 }
 
 export async function getCachedMunicipiosByProvinciaId(
@@ -404,21 +423,22 @@ export async function replaceCachedMunicipiosForProvincia(
   municipios: Municipio[],
 ): Promise<void> {
   if (!municipios) return;
-  await ensureTables();
-  const db = await getDb();
-  await db.execAsync("BEGIN TRANSACTION;");
-  try {
-    await db.runAsync(`DELETE FROM municipio_cache WHERE provincia_id = ?`, [provinciaId]);
-    for (const m of municipios) {
-      await db.runAsync(
-        `INSERT OR REPLACE INTO municipio_cache (id, nombre, provincia_id) VALUES (?, ?, ?)`,
-        [m.id, m.nombre, m.provincia_id],
-      );
+  await enqueueWrite(async () => {
+    await ensureTables();
+    const db = await getDb();
+    try {
+      await db.runAsync(`DELETE FROM municipio_cache WHERE provincia_id = ?`, [provinciaId]);
+      for (const m of municipios) {
+        await db.runAsync(
+          `INSERT OR REPLACE INTO municipio_cache (id, nombre, provincia_id) VALUES (?, ?, ?)`,
+          [m.id, m.nombre, m.provincia_id],
+        );
+      }
+    } catch (e) {
+      if (!isLockedError(e)) {
+        console.warn("[offline-sitios-db] error al guardar municipio_cache:", e);
+      }
     }
-    await db.execAsync("COMMIT;");
-  } catch (e) {
-    await db.execAsync("ROLLBACK;");
-    console.warn("[offline-sitios-db] error al guardar municipio_cache:", e);
-  }
+  });
 }
 

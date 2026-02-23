@@ -94,10 +94,11 @@ export default function DetallesScreen() {
     opacity: imageFadeOpacity.value,
   }));
 
+  const currentIdRef = useRef<string | null>(null);
+
   const fetchSitio = useCallback(async (sitioId: string) => {
     const numId = parseInt(sitioId, 10);
-    const hadSitio = !!sitio;
-    if (!hadSitio) setLoading(true);
+    setLoading(true);
     setError(null);
     try {
       if (Number.isNaN(numId)) throw new Error("ID inválido");
@@ -105,6 +106,7 @@ export default function DetallesScreen() {
       // 1) SQLite primero (instantáneo / offline)
       try {
         const local = await getCachedSitioRelevanteById(numId);
+        if (currentIdRef.current !== sitioId) return;
         if (local) {
           setSitio(local);
           setLoading(false);
@@ -122,18 +124,24 @@ export default function DetallesScreen() {
         .eq("id", numId)
         .eq("estado_suscripcion", "aceptado")
         .single();
+      if (currentIdRef.current !== sitioId) return;
       if (err) throw err;
       setSitio(data as SitioRelevante);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al cargar el sitio");
-      setSitio(null);
+      if (currentIdRef.current === sitioId) {
+        setError(e instanceof Error ? e.message : "Error al cargar el sitio");
+        setSitio(null);
+      }
     } finally {
-      setLoading(false);
+      if (currentIdRef.current === sitioId) {
+        setLoading(false);
+      }
     }
-  }, [sitio]);
+  }, []);
 
   useEffect(() => {
     if (id) {
+      currentIdRef.current = id;
       fetchSitio(id);
     } else {
       setSitio(null);

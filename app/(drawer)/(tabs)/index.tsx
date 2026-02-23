@@ -187,6 +187,10 @@ export default function HomeScreen() {
   const totalSitios = sitiosPorProvincia.length;
 
   const tiposDisponibles = useMemo(() => {
+    // Si aún no hay sitios cargados (por ejemplo, solo tenemos categorías desde SQLite),
+    // mostramos todas las categorías disponibles para que el usuario pueda filtrar desde ya.
+    if (sitiosPorProvincia.length === 0) return tipos;
+
     const idsPresentes = new Set(
       sitiosPorProvincia
         .map((s) => s.tipo_sitio_id)
