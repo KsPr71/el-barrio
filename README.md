@@ -42,6 +42,22 @@ To learn more about developing your project with Expo, look at the following res
 - [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
 - [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
 
+## Android: la app se cierra al abrir (build release / APK)
+
+Si la app funciona en desarrollo pero al instalar el APK se cierra al iniciar:
+
+1. **Ver el motivo del crash** (recomendado): conecta el dispositivo por USB, activa "Depuración USB" y ejecuta:
+   ```bash
+   adb logcat *:E | findstr -i "ReactNative\|Expo\|FATAL\|AndroidRuntime"
+   ```
+   Luego abre la app; en la terminal aparecerá el error. En macOS/Linux usa `grep` en lugar de `findstr`.
+
+2. **Cambios que suelen ayudar** (ya aplicados en este proyecto):
+   - Splash screen: se usa `SplashScreen.preventAutoHideAsync()` y `hideAsync()` cuando el layout está listo.
+   - ErrorBoundary en la raíz: si el fallo es en JavaScript/React, verás "Algo salió mal" en lugar de cierre brusco.
+
+3. **Si el crash es nativo** (no aparece pantalla "Algo salió mal"): el log de `adb logcat` indicará el módulo (p. ej. Reanimated, Maps, SecureStore). Revisa que en EAS Build uses el mismo `node_modules` y que las variables de entorno (`EXPO_PUBLIC_*`) estén definidas en el perfil de build.
+
 ## Join the community
 
 Join our community of developers creating universal apps.

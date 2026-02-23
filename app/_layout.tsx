@@ -1,6 +1,7 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -16,9 +17,13 @@ import {
 } from "react-native-safe-area-context";
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
+import { RootErrorBoundary } from "@/components/root-error-boundary";
 import { HeaderCategoryProvider } from "@/contexts/header-category-context";
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+
+// Evita que la splash se oculte antes de que la app esté lista (reduce crashes en release)
+SplashScreen.preventAutoHideAsync();
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -37,6 +42,11 @@ export default function RootLayout() {
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
     initManusRuntime();
+  }, []);
+
+  // Ocultar splash cuando el layout esté montado (evita crash al iniciar en release)
+  useEffect(() => {
+    SplashScreen.hideAsync();
   }, []);
 
   const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
@@ -80,10 +90,11 @@ export default function RootLayout() {
   }, [initialInsets, initialFrame]);
 
   const content = (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          <HeaderCategoryProvider>
+    <RootErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+          <QueryClientProvider client={queryClient}>
+            <HeaderCategoryProvider>
             {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
             {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
             {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
@@ -91,11 +102,12 @@ export default function RootLayout() {
               <Stack.Screen name="(drawer)" />
               <Stack.Screen name="oauth/callback" />
             </Stack>
-            <StatusBar style="auto" />
-          </HeaderCategoryProvider>
-        </QueryClientProvider>
-      </trpc.Provider>
-    </GestureHandlerRootView>
+              <StatusBar style="auto" />
+            </HeaderCategoryProvider>
+          </QueryClientProvider>
+        </trpc.Provider>
+      </GestureHandlerRootView>
+    </RootErrorBoundary>
   );
 
   const shouldOverrideSafeArea = Platform.OS === "web";
