@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
+import { getCachedTiposSitio, replaceCachedTiposSitio } from "@/lib/offline-sitios-db";
 
 export type TipoSitio = {
   id: number;
@@ -46,6 +47,9 @@ export function useTiposSitio() {
       const list = (data ?? []) as TipoSitio[];
       cachedTipos = list;
       setTipos(list);
+      void replaceCachedTiposSitio(list).catch((e) => {
+        console.warn("[useTiposSitio] error al guardar cache SQLite:", e);
+      });
     } catch (e) {
       const msg = getErrorMessage(e, "Error al cargar tipos de sitio");
       setError(msg);
@@ -58,7 +62,25 @@ export function useTiposSitio() {
   }, []);
 
   useEffect(() => {
-    fetchTipos();
+    let cancelled = false;
+    const bootstrap = async () => {
+      try {
+        const local = await getCachedTiposSitio();
+        if (!cancelled && local.length > 0) {
+          cachedTipos = local;
+          setTipos(local);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.warn("[useTiposSitio] error al leer cache SQLite:", e);
+      } finally {
+        if (!cancelled) void fetchTipos();
+      }
+    };
+    bootstrap();
+    return () => {
+      cancelled = true;
+    };
   }, [fetchTipos]);
 
   // Realtime: actualizar caché y estado cuando cambie la tabla tipos_sitio en Supabase

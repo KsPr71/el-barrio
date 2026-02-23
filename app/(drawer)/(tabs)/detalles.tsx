@@ -14,6 +14,7 @@ import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
 import { formatHorarioForDisplay, isHorarioAbierto } from "@/lib/horario";
 import { supabase } from "@/lib/supabase";
+import { getCachedSitioRelevanteById } from "@/lib/offline-sitios-db";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
@@ -94,11 +95,25 @@ export default function DetallesScreen() {
   }));
 
   const fetchSitio = useCallback(async (sitioId: string) => {
-    setLoading(true);
+    const numId = parseInt(sitioId, 10);
+    const hadSitio = !!sitio;
+    if (!hadSitio) setLoading(true);
     setError(null);
     try {
-      const numId = parseInt(sitioId, 10);
       if (Number.isNaN(numId)) throw new Error("ID inválido");
+
+      // 1) SQLite primero (instantáneo / offline)
+      try {
+        const local = await getCachedSitioRelevanteById(numId);
+        if (local) {
+          setSitio(local);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.warn("[Detalles] error al leer cache SQLite:", e);
+      }
+
+      // 2) Supabase en segundo plano (fuente de verdad)
       const { data, error: err } = await supabase
         .from("sitios_relevantes")
         .select(
@@ -115,7 +130,7 @@ export default function DetallesScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sitio]);
 
   useEffect(() => {
     if (id) {

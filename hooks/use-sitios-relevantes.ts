@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  getCachedSitiosRelevantes,
+  replaceCachedSitiosRelevantes,
+} from "@/lib/offline-sitios-db";
 
 /** Cache en memoria para no tener que consultar la BD en cada búsqueda (p. ej. en "Aquí hay") */
 let cachedSitiosRelevantes: SitioRelevante[] | null = null;
@@ -40,7 +44,7 @@ function getErrorMessage(e: unknown, fallback: string): string {
 
 export function useSitiosRelevantes() {
   const [sitios, setSitios] = useState<SitioRelevante[]>(() => cachedSitiosRelevantes ?? []);
-  // loading: si hay cache al montar, no mostramos loading (búsqueda sin consultar BD).
+  // loading: mientras no hay cache persistente ni en memoria, mostramos loader.
   const [loading, setLoading] = useState(() => cachedSitiosRelevantes === null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -190,10 +194,41 @@ export function useSitiosRelevantes() {
         setLoadingMore(false);
       }
     }
+    // Sincronizar cache persistente en segundo plano con la última lista conocida
+    if (cachedSitiosRelevantes && cachedSitiosRelevantes.length > 0) {
+      void replaceCachedSitiosRelevantes(cachedSitiosRelevantes).catch((e) => {
+        console.warn("[useSitiosRelevantes] error al guardar cache SQLite:", e);
+      });
+    }
   }, [fetchPage]);
 
   useEffect(() => {
-    fetchSitios();
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      try {
+        // 1) Intentar cargar desde SQLite para mostrar datos al instante / offline
+        const local = await getCachedSitiosRelevantes();
+        if (!cancelled && local.length > 0) {
+          cachedSitiosRelevantes = local;
+          setSitios(local);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.warn("[useSitiosRelevantes] error al leer cache SQLite:", e);
+      } finally {
+        // 2) Siempre intentar refrescar desde Supabase en segundo plano
+        if (!cancelled) {
+          void fetchSitios();
+        }
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
   }, [fetchSitios]);
 
   // Realtime: actualizar lista cuando se inserta, actualiza o elimina un sitio

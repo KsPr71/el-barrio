@@ -1,5 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
+import {
+  getCachedMunicipiosByProvinciaId,
+  getCachedProvincias,
+  replaceCachedMunicipiosForProvincia,
+  replaceCachedProvincias,
+} from "@/lib/offline-sitios-db";
 
 export type Provincia = { id: string; nombre: string };
 export type Municipio = { id: string; nombre: string; provincia_id: string };
@@ -20,7 +26,8 @@ export function useLocations() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProvincias = useCallback(async () => {
-    setLoadingProvincias(true);
+    const hadLocal = provincias.length > 0;
+    if (!hadLocal) setLoadingProvincias(true);
     setError(null);
     try {
       const { data, error: err } = await supabase
@@ -31,15 +38,19 @@ export function useLocations() {
         console.error("[useLocations] provincia error:", err);
         throw err;
       }
-      setProvincias((data ?? []) as Provincia[]);
+      const list = (data ?? []) as Provincia[];
+      setProvincias(list);
+      void replaceCachedProvincias(list).catch((e) => {
+        console.warn("[useLocations] error al guardar provincia_cache:", e);
+      });
     } catch (e) {
       const msg = getErrorMessage(e, "Error al cargar provincias");
       setError(msg);
-      setProvincias([]);
+      if (!hadLocal) setProvincias([]);
     } finally {
       setLoadingProvincias(false);
     }
-  }, []);
+  }, [provincias.length]);
 
   const fetchMunicipios = useCallback(async (provinciaId: string | null) => {
     if (!provinciaId) {
@@ -47,9 +58,22 @@ export function useLocations() {
       setLoadingMunicipios(false);
       return;
     }
-    setLoadingMunicipios(true);
+    const hadLocal = municipios.length > 0;
+    if (!hadLocal) setLoadingMunicipios(true);
     setError(null);
     try {
+      // 1) SQLite primero (si existe)
+      try {
+        const local = await getCachedMunicipiosByProvinciaId(provinciaId);
+        if (local.length > 0) {
+          setMunicipios(local);
+          setLoadingMunicipios(false);
+        }
+      } catch (e) {
+        console.warn("[useLocations] cache municipios SQLite:", e);
+      }
+
+      // 2) Supabase en segundo plano
       const { data, error: err } = await supabase
         .from("municipio")
         .select("id, nombre, provincia_id")
@@ -59,18 +83,41 @@ export function useLocations() {
         console.error("[useLocations] municipio error:", err);
         throw err;
       }
-      setMunicipios((data ?? []) as Municipio[]);
+      const list = (data ?? []) as Municipio[];
+      setMunicipios(list);
+      void replaceCachedMunicipiosForProvincia(provinciaId, list).catch((e) => {
+        console.warn("[useLocations] error al guardar municipio_cache:", e);
+      });
     } catch (e) {
       const msg = getErrorMessage(e, "Error al cargar municipios");
       setError(msg);
-      setMunicipios([]);
+      if (!hadLocal) setMunicipios([]);
     } finally {
       setLoadingMunicipios(false);
     }
-  }, []);
+  }, [municipios.length]);
 
   useEffect(() => {
-    fetchProvincias();
+    let cancelled = false;
+    const bootstrap = async () => {
+      // 1) Provincias desde SQLite (instantáneo/offline)
+      try {
+        const local = await getCachedProvincias();
+        if (!cancelled && local.length > 0) {
+          setProvincias(local);
+          setLoadingProvincias(false);
+        }
+      } catch (e) {
+        console.warn("[useLocations] cache provincias SQLite:", e);
+      } finally {
+        // 2) Supabase en segundo plano
+        if (!cancelled) void fetchProvincias();
+      }
+    };
+    bootstrap();
+    return () => {
+      cancelled = true;
+    };
   }, [fetchProvincias]);
 
   return {
