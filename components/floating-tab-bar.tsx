@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   container: {
-    height: 64,
+    height: 56,
     minWidth: 280,
     maxWidth: 320,
     borderRadius: 28,
@@ -250,8 +250,8 @@ const styles = StyleSheet.create({
   },
   pill: {
     position: "absolute",
-    top: 8,
-    bottom: 8,
+    top: 4,
+    bottom: 4,
     borderRadius: 22,
   },
   tabRow: {

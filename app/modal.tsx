@@ -82,7 +82,16 @@ export default function ModalScreen() {
           Versión {Constants.expoConfig?.version ?? "1.0.0"}
         </Text>
 
-        <Text style={[styles.purpose, { color: colors.muted }]}>
+        <Text
+          style={[
+            styles.purpose,
+            {
+              color: colors.muted,
+              textAlign: "center",
+              textAlignVertical: "center",
+            },
+          ]}
+        >
           Por el Barrio te permite descubrir y conectar con los negocios y
           lugares destacados de tu comunidad. Encuentra sitios de interés,
           opiniones y toda la información que necesitas cerca de ti.
@@ -110,7 +119,7 @@ export default function ModalScreen() {
           >
             <IconSymbol
               name="person.crop.rectangle.badge.plus.fill"
-              size={30}
+              size={20}
               color={colors.primary}
             />
 
@@ -246,11 +255,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   purpose: {
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 22,
     textAlign: "center",
     marginBottom: 28,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   section: {
     width: "100%",
@@ -283,7 +292,7 @@ const styles = StyleSheet.create({
   },
   rolesContainer: {
     width: "100%",
-    marginTop: 4,
+    marginTop: 2,
   },
   roleGroup: {
     width: "100%",
@@ -298,18 +307,17 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   roleLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 0.6,
   },
   membersList: {
-    paddingVertical: 5,
+    paddingVertical: 2,
     paddingHorizontal: 14,
   },
   memberName: {
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: "500",
-    marginBottom: 4,
+    marginBottom: 2,
   },
 });

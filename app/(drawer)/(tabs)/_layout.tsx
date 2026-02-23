@@ -52,20 +52,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="aqui-hay"
-        options={{
-          title: "Aquí hay",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="magnifyingglass" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="detalles"
         options={{
           title: "Detalles",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="document.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="aqui-hay"
+        options={{
+          title: "Aquí hay",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="magnifyingglass" color={color} />
           ),
         }}
       />
