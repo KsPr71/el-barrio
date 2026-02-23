@@ -159,6 +159,7 @@ export default function AdministracionScreen() {
     actualizarSitio,
   } = useSitiosAdmin();
   const [authMode, setAuthMode] = useState<"in" | "up">("in");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authSubmitting, setAuthSubmitting] = useState(false);
@@ -199,12 +200,16 @@ export default function AdministracionScreen() {
       Alert.alert("Error", "Ingresa email y contraseña");
       return;
     }
+    if (authMode === "up" && !name.trim()) {
+      Alert.alert("Error", "El nombre es obligatorio al registrarse");
+      return;
+    }
     setAuthSubmitting(true);
     try {
       if (authMode === "in") {
         await signIn(email, password);
       } else {
-        await signUp(email, password);
+        await signUp(email, password, name);
       }
     } catch {
       // error ya en authError
@@ -243,6 +248,23 @@ export default function AdministracionScreen() {
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
+            {authMode === "up" && (
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="Nombre completo (obligatorio)"
+                placeholderTextColor={colors.muted}
+                autoCapitalize="words"
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    color: colors.foreground,
+                    borderColor: colors.border,
+                  },
+                ]}
+              />
+            )}
             <TextInput
               value={email}
               onChangeText={setEmail}

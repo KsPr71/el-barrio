@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { supabase } from "@/lib/supabase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useState } from "react";
@@ -23,6 +24,7 @@ async function getOrCreateGuestId(): Promise<string> {
 
 export function useProfile() {
   const { user } = useAuth();
+  const { user: supabaseUser, profile: supabaseProfile } = useSupabaseAuth();
   const [profile, setProfile] = useState<ProfileData>({
     name: "",
     email: "",
@@ -33,7 +35,11 @@ export function useProfile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const userId = user?.openId ?? user?.id?.toString() ?? null;
+  const userId =
+    supabaseUser?.id ??
+    user?.openId ??
+    user?.id?.toString() ??
+    null;
 
   const fetchProfile = useCallback(async () => {
     let id: string;
@@ -60,6 +66,13 @@ export function useProfile() {
           province: data.province ?? "",
           municipality: data.municipality ?? "",
         });
+      } else if (supabaseUser && supabaseProfile) {
+        setProfile({
+          name: supabaseProfile.name ?? "",
+          email: supabaseProfile.email ?? supabaseUser.email ?? "",
+          province: "",
+          municipality: "",
+        });
       } else if (user) {
         setProfile({
           name: user.name ?? "",
@@ -73,7 +86,7 @@ export function useProfile() {
     } finally {
       setLoading(false);
     }
-  }, [userId, user?.name, user?.email]);
+  }, [userId, user, supabaseUser, supabaseProfile]);
 
   useEffect(() => {
     fetchProfile();

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 export type AdminProfile = {
   id: string;
   email: string | null;
+  name: string | null;
   role: "admin" | "user";
 };
 
@@ -15,18 +16,32 @@ export function useSupabaseAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data, error: err } = await supabase
-      .from("admin_profiles")
-      .select("id, email, role")
-      .eq("id", userId)
-      .single();
-    if (err) {
-      console.warn("[useSupabaseAuth] profile fetch:", err);
-      return null;
-    }
-    return data as AdminProfile;
-  }, []);
+  const fetchProfile = useCallback(
+    async (userId: string, userMetadata?: { display_name?: string; full_name?: string }) => {
+      const { data, error: err } = await supabase
+        .from("admin_profiles")
+        .select("id, email, name, role")
+        .eq("id", userId)
+        .single();
+      if (err) {
+        const fallback = await supabase
+          .from("admin_profiles")
+          .select("id, email, role")
+          .eq("id", userId)
+          .single();
+        if (fallback.error) {
+          console.warn("[useSupabaseAuth] profile fetch:", err);
+          return null;
+        }
+        return {
+          ...fallback.data,
+          name: userMetadata?.display_name ?? userMetadata?.full_name ?? null,
+        } as AdminProfile;
+      }
+      return data as AdminProfile;
+    },
+    [],
+  );
 
   const refreshSession = useCallback(async () => {
     setLoading(true);
@@ -40,7 +55,7 @@ export function useSupabaseAuth() {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        const p = await fetchProfile(s.user.id);
+        const p = await fetchProfile(s.user.id, s.user.user_metadata);
         setProfile(p);
       } else {
         setProfile(null);
@@ -67,7 +82,7 @@ export function useSupabaseAuth() {
         throw err;
       }
       if (data.user) {
-        const p = await fetchProfile(data.user.id);
+        const p = await fetchProfile(data.user.id, data.user.user_metadata);
         setProfile(p);
       }
       setSession(data.session);
@@ -77,18 +92,44 @@ export function useSupabaseAuth() {
   );
 
   const signUp = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, name: string) => {
       setError(null);
       const { data, error: err } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            display_name: name.trim() || undefined,
+            full_name: name.trim() || undefined,
+          },
+        },
       });
       if (err) {
         setError(err.message);
         throw err;
       }
       if (data.user) {
-        const p = await fetchProfile(data.user.id);
+        const userId = data.user.id;
+        const nameVal = name.trim() || null;
+        const updateAdmin = await supabase
+          .from("admin_profiles")
+          .update({ name: nameVal })
+          .eq("id", userId);
+        if (updateAdmin.error) {
+          console.warn("[useSupabaseAuth] admin_profiles update (name):", updateAdmin.error);
+        }
+        const upsertProfile = await supabase.from("user_profiles").upsert(
+          {
+            user_id: userId,
+            name: nameVal,
+            email: email.trim() || null,
+          },
+          { onConflict: "user_id" },
+        );
+        if (upsertProfile.error) {
+          console.warn("[useSupabaseAuth] user_profiles upsert:", upsertProfile.error);
+        }
+        const p = await fetchProfile(userId, data.user.user_metadata);
         setProfile(p);
       }
       setSession(data.session);
@@ -113,7 +154,7 @@ export function useSupabaseAuth() {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        const p = await fetchProfile(s.user.id);
+        const p = await fetchProfile(s.user.id, s.user.user_metadata);
         setProfile(p);
       } else {
         setProfile(null);

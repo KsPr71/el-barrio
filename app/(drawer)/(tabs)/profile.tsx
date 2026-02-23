@@ -8,6 +8,7 @@ import {
   type Provincia,
 } from "@/hooks/use-locations";
 import { useProfile, type ProfileData } from "@/hooks/use-profile";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -31,6 +32,11 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
+  const {
+    user: supabaseUser,
+    isAuthenticated: supabaseAuthenticated,
+    signOut: supabaseSignOut,
+  } = useSupabaseAuth();
   const { profile, loading, saving, error, saveProfile } = useProfile();
   const {
     provincias,
@@ -98,9 +104,16 @@ export default function ProfileScreen() {
   const handleLogout = useCallback(() => {
     Alert.alert("Cerrar sesión", "¿Estás seguro?", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Cerrar sesión", style: "destructive", onPress: logout },
+      {
+        text: "Cerrar sesión",
+        style: "destructive",
+        onPress: () => {
+          if (supabaseAuthenticated) supabaseSignOut();
+          else logout();
+        },
+      },
     ]);
-  }, [logout]);
+  }, [logout, supabaseAuthenticated, supabaseSignOut]);
 
   const settingsOptions = [
     { id: 1, title: "Notificaciones", icon: "paperplane.fill" as const },
@@ -115,7 +128,7 @@ export default function ProfileScreen() {
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 8,
     fontSize: 16,
   };
 
@@ -332,11 +345,11 @@ export default function ProfileScreen() {
               )}
             </View>
 
-            {user && (
+            {(user || supabaseUser) && (
               <TouchableOpacity
                 onPress={handleLogout}
                 className="rounded-full py-4 items-center active:opacity-80"
-                style={{ backgroundColor: colors.primary }}
+                style={{ backgroundColor: colors.primary, marginBottom: 150 }}
               >
                 <Text
                   className="text-base font-semibold"
