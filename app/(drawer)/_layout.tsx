@@ -4,6 +4,13 @@ import { useHeaderCategory } from "@/contexts/header-category-context";
 import { useSyncStatus } from "@/contexts/sync-status-context";
 import { useColors } from "@/hooks/use-colors";
 import { useProfile } from "@/hooks/use-profile";
+import {
+  SearchVisualFreeIcons,
+  StoreLocation02Icon,
+  UserCheck01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import Constants from "expo-constants";
 import { router, usePathname } from "expo-router";
@@ -97,11 +104,18 @@ function HeaderRightWithChip() {
       {/* Estado de sincronización: spinner mientras actualiza, check al terminar */}
       {isSyncing ? (
         <View style={styles.syncIconWrap}>
-          <ActivityIndicator size="small" color={colors.secondary ?? "#FBBF24"} />
+          <ActivityIndicator
+            size="small"
+            color={colors.secondary ?? "#FBBF24"}
+          />
         </View>
       ) : justUpdated ? (
         <View style={styles.syncIconWrap}>
-          <IconSymbol name="checkmark.circle.fill" size={18} color={colors.secondary ?? "#FBBF24"} />
+          <IconSymbol
+            name="checkmark.circle.fill"
+            size={18}
+            color={colors.secondary ?? "#FBBF24"}
+          />
         </View>
       ) : null}
       {/* Medidor invisible para calcular el ancho real del chip */}
@@ -208,7 +222,12 @@ function CustomDrawerContent(props: any) {
       <DrawerItem
         label="Inicio"
         icon={({ color, size }) => (
-          <IconSymbol name="house.fill" size={size} color={color} />
+          <HugeiconsIcon
+            icon={StoreLocation02Icon}
+            color={color}
+            size={28}
+            strokeWidth={1.5}
+          />
         )}
         onPress={() => {
           // Cerrar el drawer primero
@@ -229,7 +248,12 @@ function CustomDrawerContent(props: any) {
       <DrawerItem
         label="Aquí hay"
         icon={({ color, size }) => (
-          <IconSymbol name="magnifyingglass" size={size} color={color} />
+          <HugeiconsIcon
+            icon={SearchVisualFreeIcons}
+            color={color}
+            size={28}
+            strokeWidth={1.5}
+          />
         )}
         onPress={() => {
           props.navigation.closeDrawer();
@@ -246,10 +270,11 @@ function CustomDrawerContent(props: any) {
       <DrawerItem
         label="Perfil"
         icon={({ color, size }) => (
-          <IconSymbol
-            name="chevron.left.forwardslash.chevron.right"
-            size={size}
+          <HugeiconsIcon
+            icon={UserCheck01Icon}
             color={color}
+            size={28}
+            strokeWidth={1.5}
           />
         )}
         onPress={() => {

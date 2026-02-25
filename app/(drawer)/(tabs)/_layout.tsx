@@ -4,8 +4,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FloatingTabBar } from "@/components/floating-tab-bar";
 import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import {
+  FileValidationIcon,
+  SearchVisualFreeIcons,
+  StoreLocation02Icon,
+  UserCheck01Icon,
+} from "@hugeicons/core-free-icons";
+
+import { HugeiconsIcon } from "@hugeicons/react-native";
 
 const TAB_BAR_MARGIN_BOTTOM = 0;
 const TAB_BAR_HEIGHT = 64;
@@ -46,8 +53,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Inicio",
+
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <HugeiconsIcon
+              icon={StoreLocation02Icon}
+              color={color}
+              size={28}
+              strokeWidth={2}
+            />
           ),
         }}
       />
@@ -56,7 +69,12 @@ export default function TabLayout() {
         options={{
           title: "Detalles",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="document.fill" color={color} />
+            <HugeiconsIcon
+              icon={FileValidationIcon}
+              color={color}
+              size={28}
+              strokeWidth={2}
+            />
           ),
         }}
       />
@@ -65,7 +83,12 @@ export default function TabLayout() {
         options={{
           title: "Aquí hay",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="magnifyingglass" color={color} />
+            <HugeiconsIcon
+              icon={SearchVisualFreeIcons}
+              color={color}
+              size={28}
+              strokeWidth={2}
+            />
           ),
         }}
       />
@@ -74,7 +97,12 @@ export default function TabLayout() {
         options={{
           title: "Perfil",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person.fill" color={color} />
+            <HugeiconsIcon
+              icon={UserCheck01Icon}
+              color={color}
+              size={28}
+              strokeWidth={2}
+            />
           ),
         }}
       />
