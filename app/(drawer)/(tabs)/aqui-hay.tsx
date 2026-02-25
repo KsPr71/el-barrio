@@ -2,13 +2,17 @@ import { ScreenContainer } from "@/components/screen-container";
 import { SitioRelevanteCard } from "@/components/sitio-relevante-card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import { useLocations } from "@/hooks/use-locations";
+import { useProfile } from "@/hooks/use-profile";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useSitiosRelevantes } from "@/hooks/use-sitios-relevantes";
 import { matchTermsInText, queryToSearchTerms } from "@/lib/search-ofertas";
 import { router } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type SearchResult = {
   sitio: SitioRelevante;
@@ -24,13 +29,48 @@ export type SearchResult = {
 
 export default function AquiHayScreen() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const { sitios, loading, error } = useSitiosRelevantes();
+  const { provincias } = useLocations();
+  const { profile } = useProfile();
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const cancelledRef = useRef(false);
+  /** Filtro de provincia: undefined = usar perfil, null = Todas, string = id provincia */
+  const [filterProvinciaId, setFilterProvinciaId] = useState<
+    string | null | undefined
+  >(undefined);
+  const [showProvinciaModal, setShowProvinciaModal] = useState(false);
+
+  // Provincia del perfil (para valor por defecto)
+  const provinciaUsuarioId = useMemo(() => {
+    if (!profile.province || provincias.length === 0) return null;
+    const provincia = provincias.find((p) => p.nombre === profile.province);
+    return provincia?.id ?? null;
+  }, [profile.province, provincias]);
+
+  // Provincia efectiva: override manual o perfil; null = mostrar todos
+  const effectiveProvinciaId = useMemo(() => {
+    if (filterProvinciaId === undefined) return provinciaUsuarioId;
+    return filterProvinciaId;
+  }, [filterProvinciaId, provinciaUsuarioId]);
+
+  const effectiveProvinciaNombre = useMemo(() => {
+    if (!effectiveProvinciaId) return null;
+    return (
+      provincias.find((p) => p.id === effectiveProvinciaId)?.nombre ?? null
+    );
+  }, [effectiveProvinciaId, provincias]);
+
+  // Filtrar sitios por provincia efectiva antes de buscar ofertas
+  const sitiosPorProvincia = useMemo(() => {
+    if (!effectiveProvinciaId) return sitios;
+    return sitios.filter((s) => s.provincia_id === effectiveProvinciaId);
+  }, [sitios, effectiveProvinciaId]);
 
   const terms = queryToSearchTerms(query);
+  const termsKey = useMemo(() => terms.join(","), [terms]);
 
   // Búsqueda progresiva: desde la primera coincidencia, ir añadiendo el resto
   useEffect(() => {
@@ -47,7 +87,7 @@ export default function AquiHayScreen() {
     let mounted = true;
     const run = async () => {
       const acc: SearchResult[] = [];
-      for (const sitio of sitios) {
+      for (const sitio of sitiosPorProvincia) {
         if (!mounted || cancelledRef.current) return;
         const { matches, matchedWords } = matchTermsInText(
           sitio.ofertas,
@@ -67,7 +107,7 @@ export default function AquiHayScreen() {
       mounted = false;
       cancelledRef.current = true;
     };
-  }, [terms.join(","), sitios]);
+  }, [terms, termsKey, sitiosPorProvincia]);
 
   const handlePressCard = useCallback((id: number) => {
     router.push({
@@ -82,9 +122,33 @@ export default function AquiHayScreen() {
   return (
     <ScreenContainer className="flex-1">
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          Aquí hay
-        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text style={[styles.title, { color: colors.foreground }]}>
+            {effectiveProvinciaNombre
+              ? `Aquí hay en ${effectiveProvinciaNombre}`
+              : "Aquí hay"}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowProvinciaModal(true)}
+            activeOpacity={0.85}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 20,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.primary,
+            }}
+          >
+            <IconSymbol name="location.fill" size={18} color="#FFF" />
+          </TouchableOpacity>
+        </View>
         <Text style={[styles.subtitle, { color: colors.muted }]}>
           Busca productos en las ofertas de los sitios
         </Text>
@@ -93,7 +157,7 @@ export default function AquiHayScreen() {
             style={[
               styles.inputWrap,
               {
-                backgroundColor: colors.surface,
+                backgroundColor: colors.surface + "70",
                 borderColor: colors.border,
               },
               query.trim().length === 0 && {
@@ -150,7 +214,7 @@ export default function AquiHayScreen() {
         )}
       </View>
 
-      {loading && sitios.length === 0 ? (
+      {loading && sitiosPorProvincia.length === 0 ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.loadingText, { color: colors.muted }]}>
@@ -186,6 +250,7 @@ export default function AquiHayScreen() {
               />
             ))
           )}
+          <View style={{ height: 150 }} />
         </ScrollView>
       ) : (
         <View style={styles.centered}>
@@ -200,6 +265,130 @@ export default function AquiHayScreen() {
           </Text>
         </View>
       )}
+
+      {/* Modal: elegir provincia (igual que en inicio) */}
+      <Modal
+        visible={showProvinciaModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowProvinciaModal(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
+          }}
+          onPress={() => setShowProvinciaModal(false)}
+        >
+          <Pressable
+            style={{
+              backgroundColor: colors.background,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              paddingBottom: Math.max(insets.bottom, 16),
+              maxHeight: "70%",
+            }}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+            >
+              <Text
+                className="text-lg font-semibold"
+                style={{ color: colors.foreground }}
+              >
+                Filtrar por provincia
+              </Text>
+            </View>
+            <ScrollView
+              style={{ maxHeight: 400 }}
+              contentContainerStyle={{ paddingVertical: 8 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  setFilterProvinciaId(null);
+                  setShowProvinciaModal(false);
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 14,
+                  paddingHorizontal: 20,
+                  backgroundColor:
+                    effectiveProvinciaId === null
+                      ? colors.primary + "20"
+                      : "transparent",
+                }}
+              >
+                <IconSymbol
+                  name="location.fill"
+                  size={22}
+                  color={
+                    effectiveProvinciaId === null
+                      ? colors.primary
+                      : colors.muted
+                  }
+                />
+                <Text
+                  className="text-base ml-3"
+                  style={{
+                    color:
+                      effectiveProvinciaId === null
+                        ? colors.primary
+                        : colors.foreground,
+                    fontWeight: effectiveProvinciaId === null ? "600" : "400",
+                  }}
+                >
+                  Todas las provincias
+                </Text>
+              </TouchableOpacity>
+              {provincias.map((p) => {
+                const isSelected = effectiveProvinciaId === p.id;
+                return (
+                  <TouchableOpacity
+                    key={p.id}
+                    onPress={() => {
+                      setFilterProvinciaId(p.id);
+                      setShowProvinciaModal(false);
+                    }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingVertical: 14,
+                      paddingHorizontal: 20,
+                      backgroundColor: isSelected
+                        ? colors.primary + "20"
+                        : "transparent",
+                    }}
+                  >
+                    <IconSymbol
+                      name="location.fill"
+                      size={22}
+                      color={isSelected ? colors.primary : colors.muted}
+                    />
+                    <Text
+                      className="text-base ml-3"
+                      style={{
+                        color: isSelected ? colors.primary : colors.foreground,
+                        fontWeight: isSelected ? "600" : "400",
+                      }}
+                    >
+                      {p.nombre}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -207,12 +396,12 @@ export default function AquiHayScreen() {
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+
     paddingBottom: 20,
     borderBottomWidth: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "700",
   },
   subtitle: {
@@ -222,7 +411,7 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: "row",
     alignItems: "stretch",
-    marginTop: 16,
+    marginTop: 10,
   },
   inputWrap: {
     flex: 1,

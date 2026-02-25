@@ -47,6 +47,11 @@ export function SitioRelevanteCard({
         backgroundColor: colors.surface,
         borderColor: colors.border,
         borderWidth: 1,
+        elevation: 3,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
       }}
     >
       <View style={{ position: "relative" }}>
@@ -86,6 +91,7 @@ export function SitioRelevanteCard({
             <View
               style={{
                 paddingHorizontal: 8,
+
                 paddingVertical: 4,
                 borderRadius: 12,
                 backgroundColor:

@@ -34,7 +34,7 @@ const URL_WHATSAPP = `https://wa.me/${WHATSAPP_NUMERO}`;
 
 const handleEnviarWhatsAppObservaciones = () => {
   const mensaje =
-    "Hola, me pongo en contacto para completar el registro de mi negocio llamado..."; // Tu mensaje aquí
+    "Hola, me pongo en contacto para completar el registro de mi negocio llamado "; // Tu mensaje aquí
   const mensajeCodificado = encodeURIComponent(mensaje);
   const urlWhatsApp = `${URL_WHATSAPP}?text=${mensajeCodificado}`;
 
