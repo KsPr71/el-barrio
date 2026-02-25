@@ -36,9 +36,9 @@ function useBlurView(): React.ComponentType<{
 
 const TAB_BAR_MARGIN_H = 48;
 const ICON_SIZE = 24;
-const BLUR_INTENSITY = 90;
-const PILL_ALPHA = "44";
-const ROW_PADDING_H = 12;
+const BLUR_INTENSITY = 100;
+const PILL_ALPHA = "99";
+const ROW_PADDING_H = 5;
 
 export function FloatingTabBar(props: BottomTabBarProps) {
   const colors = useColors();
@@ -159,7 +159,7 @@ export function FloatingTabBar(props: BottomTabBarProps) {
           style={[
             styles.pill,
             animatedPillStyle,
-            { backgroundColor: activeColor + PILL_ALPHA },
+            { backgroundColor: activeColor },
           ]}
         />
         {/* Tabs: icono + etiqueta por ruta (onLayout para alinear el pill) */}
@@ -171,7 +171,7 @@ export function FloatingTabBar(props: BottomTabBarProps) {
               (options.tabBarLabel as string) ??
               (options.title as string) ??
               route.name;
-            const color = focused ? activeColor : inactiveColor;
+            const color = focused ? colors.secondary : inactiveColor;
             const iconElement =
               typeof options.tabBarIcon === "function"
                 ? options.tabBarIcon({

@@ -124,79 +124,20 @@ export function useSitiosRelevantes() {
       finished = true;
       endSync(syncKey, ok);
     };
-    setLoading(true);
-    setLoadingMore(false);
-    setError(null);
+    
     try {
-      // 1) Cargar rápido la primera página para pintar la pantalla
-      const first = await fetchPage(0, PAGE_SIZE - 1);
-      if (requestIdRef.current !== requestId) {
-        finish(false);
-        return;
-      }
-      // Ordenar primera página por tipo_sitio_id y luego por puntuación
-      first.sort((a, b) => {
-        if (a.tipo_sitio_id !== b.tipo_sitio_id) {
-          if (a.tipo_sitio_id === null) return 1;
-          if (b.tipo_sitio_id === null) return -1;
-          return a.tipo_sitio_id - b.tipo_sitio_id;
-        }
-        return b.promedio_puntuacion - a.promedio_puntuacion;
-      });
-      cachedSitiosRelevantes = first;
-      setSitios(first);
-    } catch (e) {
-      const msg = getErrorMessage(e, "Error al cargar sitios relevantes");
-      setError(msg);
-      cachedSitiosRelevantes = null;
-      setSitios([]);
-    } finally {
-      if (requestIdRef.current === requestId) {
-        setLoading(false);
-      }
-    }
-
-    // 2) Cargar el resto en segundo plano (sin bloquear UI)
-    if (requestIdRef.current !== requestId) {
-      finish(false);
-      return;
-    }
-    setLoadingMore(true);
-    try {
-      let offset = PAGE_SIZE;
-      // Seguir mientras sigan llegando páginas completas
-      const allPages: SitioRelevante[] = [];
-      for (;;) {
+      setLoading(true);
+      setLoadingMore(false);
+      setError(null);
+      try {
+        // 1) Cargar rápido la primera página para pintar la pantalla
+        const first = await fetchPage(0, PAGE_SIZE - 1);
         if (requestIdRef.current !== requestId) {
           finish(false);
           return;
         }
-        const page = await fetchPage(offset, offset + PAGE_SIZE - 1);
-        if (requestIdRef.current !== requestId) {
-          finish(false);
-          return;
-        }
-        if (page.length === 0) break;
-        allPages.push(...page);
-        if (page.length < PAGE_SIZE) break;
-        offset += PAGE_SIZE;
-      }
-      
-      // Ordenar todos los sitios: primero por tipo_sitio_id, luego por promedio_puntuacion descendente
-      allPages.sort((a, b) => {
-        // Primero agrupar por tipo_sitio_id (nulls al final)
-        if (a.tipo_sitio_id !== b.tipo_sitio_id) {
-          if (a.tipo_sitio_id === null) return 1;
-          if (b.tipo_sitio_id === null) return -1;
-          return a.tipo_sitio_id - b.tipo_sitio_id;
-        }
-        // Dentro del mismo tipo, ordenar por puntuación descendente
-        return b.promedio_puntuacion - a.promedio_puntuacion;
-      });
-      
-      setSitios((prev) => {
-        const combined = [...prev, ...allPages];
-        combined.sort((a, b) => {
+        // Ordenar primera página por tipo_sitio_id y luego por puntuación
+        first.sort((a, b) => {
           if (a.tipo_sitio_id !== b.tipo_sitio_id) {
             if (a.tipo_sitio_id === null) return 1;
             if (b.tipo_sitio_id === null) return -1;
@@ -204,25 +145,94 @@ export function useSitiosRelevantes() {
           }
           return b.promedio_puntuacion - a.promedio_puntuacion;
         });
-        cachedSitiosRelevantes = combined;
-        return combined;
-      });
-    } catch (e) {
-      // Si falla la carga incremental, mantenemos lo ya cargado y solo mostramos el error.
-      const msg = getErrorMessage(e, "Error al cargar más sitios");
-      setError(msg);
-    } finally {
-      if (requestIdRef.current === requestId) {
-        setLoadingMore(false);
+        cachedSitiosRelevantes = first;
+        setSitios(first);
+      } catch (e) {
+        const msg = getErrorMessage(e, "Error al cargar sitios relevantes");
+        setError(msg);
+        cachedSitiosRelevantes = null;
+        setSitios([]);
+        // Si falla la primera página, terminamos aquí
+        finish(false);
+        return;
+      } finally {
+        if (requestIdRef.current === requestId) {
+          setLoading(false);
+        }
       }
+
+      // 2) Cargar el resto en segundo plano (sin bloquear UI)
+      if (requestIdRef.current !== requestId) {
+        finish(false);
+        return;
+      }
+      setLoadingMore(true);
+      try {
+        let offset = PAGE_SIZE;
+        // Seguir mientras sigan llegando páginas completas
+        const allPages: SitioRelevante[] = [];
+        for (;;) {
+          if (requestIdRef.current !== requestId) {
+            finish(false);
+            return;
+          }
+          const page = await fetchPage(offset, offset + PAGE_SIZE - 1);
+          if (requestIdRef.current !== requestId) {
+            finish(false);
+            return;
+          }
+          if (page.length === 0) break;
+          allPages.push(...page);
+          if (page.length < PAGE_SIZE) break;
+          offset += PAGE_SIZE;
+        }
+        
+        // Ordenar todos los sitios: primero por tipo_sitio_id, luego por promedio_puntuacion descendente
+        allPages.sort((a, b) => {
+          // Primero agrupar por tipo_sitio_id (nulls al final)
+          if (a.tipo_sitio_id !== b.tipo_sitio_id) {
+            if (a.tipo_sitio_id === null) return 1;
+            if (b.tipo_sitio_id === null) return -1;
+            return a.tipo_sitio_id - b.tipo_sitio_id;
+          }
+          // Dentro del mismo tipo, ordenar por puntuación descendente
+          return b.promedio_puntuacion - a.promedio_puntuacion;
+        });
+        
+        setSitios((prev) => {
+          const combined = [...prev, ...allPages];
+          combined.sort((a, b) => {
+            if (a.tipo_sitio_id !== b.tipo_sitio_id) {
+              if (a.tipo_sitio_id === null) return 1;
+              if (b.tipo_sitio_id === null) return -1;
+              return a.tipo_sitio_id - b.tipo_sitio_id;
+            }
+            return b.promedio_puntuacion - a.promedio_puntuacion;
+          });
+          cachedSitiosRelevantes = combined;
+          return combined;
+        });
+      } catch (e) {
+        // Si falla la carga incremental, mantenemos lo ya cargado y solo mostramos el error.
+        const msg = getErrorMessage(e, "Error al cargar más sitios");
+        setError(msg);
+      } finally {
+        if (requestIdRef.current === requestId) {
+          setLoadingMore(false);
+        }
+      }
+      // Sincronizar cache persistente en segundo plano con la última lista conocida
+      if (cachedSitiosRelevantes && cachedSitiosRelevantes.length > 0) {
+        void replaceCachedSitiosRelevantes(cachedSitiosRelevantes).catch((e) => {
+          console.warn("[useSitiosRelevantes] error al guardar cache SQLite:", e);
+        });
+      }
+      finish(true);
+    } catch (e) {
+      // Catch-all para cualquier error inesperado
+      console.error("[useSitiosRelevantes] error inesperado en fetchSitios:", e);
+      finish(false);
     }
-    // Sincronizar cache persistente en segundo plano con la última lista conocida
-    if (cachedSitiosRelevantes && cachedSitiosRelevantes.length > 0) {
-      void replaceCachedSitiosRelevantes(cachedSitiosRelevantes).catch((e) => {
-        console.warn("[useSitiosRelevantes] error al guardar cache SQLite:", e);
-      });
-    }
-    finish(true);
   }, [fetchPage, startSync, endSync]);
 
   useEffect(() => {

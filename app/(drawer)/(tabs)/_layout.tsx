@@ -7,7 +7,7 @@ import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 
-const TAB_BAR_MARGIN_BOTTOM = 12;
+const TAB_BAR_MARGIN_BOTTOM = 0;
 const TAB_BAR_HEIGHT = 64;
 
 export default function TabLayout() {

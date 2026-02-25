@@ -52,9 +52,11 @@ export default function RootLayout() {
   }, []);
 
   // Ocultar splash cuando fuentes (p. ej. iconos Facebook/Instagram/Web) estén cargadas o falle la carga
+  // Timeout de seguridad: ocultar splash después de 3 segundos máximo para evitar bloqueos
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+      return;
     }
   }, [fontsLoaded, fontError]);
 

@@ -157,6 +157,7 @@ export default function AdministracionScreen() {
     error: sitiosError,
     crearSitio,
     actualizarSitio,
+    refresh: refreshSitios,
   } = useSitiosAdmin();
   const [authMode, setAuthMode] = useState<"in" | "up">("in");
   const [name, setName] = useState("");
@@ -339,9 +340,14 @@ export default function AdministracionScreen() {
       <ScrollView contentContainerStyle={styles.mainContainer}>
         <View style={styles.header}>
           <View
-            style={{ flexDirection: "row", gap: 20, alignItems: "flex-start" }}
+            style={{
+              flexDirection: "row",
+              gap: 20,
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+            }}
           >
-            <View>
+            <View style={{ flex: 1 }}>
               <Text
                 style={[
                   styles.title,
@@ -355,6 +361,34 @@ export default function AdministracionScreen() {
                 Administración
               </Text>
             </View>
+            <TouchableOpacity
+              onPress={refreshSitios}
+              disabled={sitiosLoading}
+              style={[
+                {
+                  padding: 10,
+                  borderRadius: 8,
+                  // backgroundColor: colors.surface,
+                  //borderWidth: 1,
+                  //borderColor: colors.border,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  minWidth: 44,
+                  minHeight: 44,
+                },
+                sitiosLoading && { opacity: 0.6 },
+              ]}
+            >
+              {sitiosLoading ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <IconSymbol
+                  name="arrow.clockwise"
+                  size={20}
+                  color={colors.primary}
+                />
+              )}
+            </TouchableOpacity>
           </View>
 
           <View
