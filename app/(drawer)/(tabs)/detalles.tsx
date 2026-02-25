@@ -13,8 +13,8 @@ import { useOpiniones } from "@/hooks/use-opiniones";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
 import { formatHorarioForDisplay, isHorarioAbierto } from "@/lib/horario";
-import { supabase } from "@/lib/supabase";
 import { getCachedSitioRelevanteById } from "@/lib/offline-sitios-db";
+import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
@@ -289,7 +289,13 @@ export default function DetallesScreen() {
         {isMapExpanded && sitio.localizacion ? (
           <Animated.ScrollView
             ref={scrollRef}
-            style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
+            style={{
+              position: "absolute",
+              width: 1,
+              height: 1,
+              opacity: 0,
+              pointerEvents: "none",
+            }}
           >
             <View />
           </Animated.ScrollView>
@@ -360,34 +366,6 @@ export default function DetallesScreen() {
               ) : null}
               <Separador />
 
-              {/* Comentario de la sección de ofertas */}
-
-              {sitio.ofertas && sitio.ofertas.length > 0 ? (
-                <Collapsible title="Ofertas" iconName="dollarsign.circle.fill">
-                  <View
-                    className="rounded-2xl p-4"
-                    style={{
-                      backgroundColor: colors.background + "50",
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                    }}
-                  >
-                    <View
-                      className="mt-2"
-                      style={{
-                        backgroundColor: colors.background,
-                        padding: 10,
-                        borderRadius: 10,
-                      }}
-                    >
-                      <Text className="text-base text-foreground">
-                        {sitio.ofertas}
-                      </Text>
-                    </View>
-                  </View>
-                </Collapsible>
-              ) : null}
-
               {sitio.horario && sitio.horario.trim() ? (
                 <Collapsible
                   title="Horario"
@@ -432,6 +410,34 @@ export default function DetallesScreen() {
                     <Text className="text-base text-foreground leading-7">
                       {formatHorarioForDisplay(sitio.horario)}
                     </Text>
+                  </View>
+                </Collapsible>
+              ) : null}
+
+              {/* Comentario de la sección de ofertas */}
+
+              {sitio.ofertas && sitio.ofertas.length > 0 ? (
+                <Collapsible title="Ofertas" iconName="dollarsign.circle.fill">
+                  <View
+                    className="rounded-2xl p-4"
+                    style={{
+                      backgroundColor: colors.background + "50",
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <View
+                      className="mt-2"
+                      style={{
+                        backgroundColor: colors.background,
+                        padding: 10,
+                        borderRadius: 10,
+                      }}
+                    >
+                      <Text className="text-base text-foreground">
+                        {sitio.ofertas}
+                      </Text>
+                    </View>
                   </View>
                 </Collapsible>
               ) : null}
