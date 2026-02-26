@@ -49,6 +49,7 @@ const MAPPING = {
   magnifyingglass: "search",
   "hand.point.down": "arrow-downward",
   "arrow.clockwise": "refresh",
+  "map.circle.fill": "map",
 } as IconMapping;
 
 /**

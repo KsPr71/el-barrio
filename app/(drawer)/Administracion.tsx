@@ -169,19 +169,30 @@ export default function AdministracionScreen() {
     null,
   );
   const [busqueda, setBusqueda] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState<
+    "todos" | "creado" | "en_revision" | "aceptado"
+  >("todos");
 
   const { tipos } = useTiposSitio();
 
   const sitiosFiltrados = useMemo(() => {
-    if (!isAdmin || !busqueda.trim()) return sitios;
+    let base = sitios;
+
+    if (isAdmin && estadoFiltro !== "todos") {
+      base = base.filter(
+        (s) => s.estado_suscripcion === estadoFiltro,
+      );
+    }
+
+    if (!isAdmin || !busqueda.trim()) return base;
     const q = busqueda.trim().toLowerCase();
-    return sitios.filter(
+    return base.filter(
       (s) =>
         s.nombre.toLowerCase().includes(q) ||
         (s.direccion?.toLowerCase().includes(q) ?? false) ||
         (s.descripcion?.toLowerCase().includes(q) ?? false),
     );
-  }, [sitios, busqueda, isAdmin]);
+  }, [sitios, busqueda, isAdmin, estadoFiltro]);
 
   const sitiosAgrupados = useMemo(() => {
     if (!isAdmin) return null;
@@ -457,21 +468,74 @@ export default function AdministracionScreen() {
         </View>
 
         {isAdmin && (
-          <View
-            style={[
-              styles.searchContainer,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <Text style={[styles.searchIcon, { color: colors.muted }]}>🔍</Text>
-            <TextInput
-              value={busqueda}
-              onChangeText={setBusqueda}
-              placeholder="Buscar por nombre, dirección o descripción..."
-              placeholderTextColor={colors.muted}
-              style={[styles.searchInput, { color: colors.foreground }]}
-            />
-          </View>
+          <>
+            <View
+              style={[
+                styles.searchContainer,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.searchIcon, { color: colors.muted }]}>🔍</Text>
+              <TextInput
+                value={busqueda}
+                onChangeText={setBusqueda}
+                placeholder="Buscar por nombre, dirección o descripción..."
+                placeholderTextColor={colors.muted}
+                style={[styles.searchInput, { color: colors.foreground }]}
+              />
+            </View>
+            <View
+              style={[
+                styles.chipRow,
+                { marginTop: 8 },
+              ]}
+            >
+              {(["todos", "creado", "en_revision", "aceptado"] as const).map(
+                (estado) => {
+                  const isActive = estadoFiltro === estado;
+                  const label =
+                    estado === "todos"
+                      ? "Todos"
+                      : estado === "creado"
+                        ? "Creado"
+                        : estado === "en_revision"
+                          ? "En revisión"
+                          : "Aceptado";
+                  const bg =
+                    estado === "creado"
+                      ? colors.primary
+                      : estado === "en_revision"
+                        ? colors.secondary
+                        : estado === "aceptado"
+                          ? colors.success
+                          : colors.surface;
+                  return (
+                    <TouchableOpacity
+                      key={estado}
+                      onPress={() => setEstadoFiltro(estado)}
+                      style={[
+                        styles.estadoBtn,
+                        {
+                          borderWidth: 1,
+                          borderColor: isActive ? bg : colors.border,
+                          backgroundColor: isActive ? bg : colors.surface,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.estadoBtnText,
+                          { color: isActive ? "#FFF" : colors.foreground },
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                },
+              )}
+            </View>
+          </>
         )}
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
           {isAdmin ? "Todos los sitios" : "Mis sitios"}

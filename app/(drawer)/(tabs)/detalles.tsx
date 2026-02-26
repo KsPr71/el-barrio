@@ -642,8 +642,32 @@ export default function DetallesScreen() {
                 </Collapsible>
               ) : null}
 
+              {sitio.direccion ? (
+                <Collapsible title="Dirección" iconName="location.circle.fill">
+                  <View
+                    className="rounded-2xl p-4"
+                    style={{
+                      backgroundColor: colors.background + "50",
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <Text className="text-xs text-muted mb-1">Dirección</Text>
+                    {sitio.direccion ? (
+                      <Text className="text-base text-foreground">
+                        {sitio.direccion}
+                      </Text>
+                    ) : (
+                      <Text className="text-sm text-muted">
+                        Sin dirección especificada
+                      </Text>
+                    )}
+                  </View>
+                </Collapsible>
+              ) : null}
+
               {sitio.localizacion ? (
-                <Collapsible title="Ubicación" iconName="location.fill">
+                <Collapsible title="Ubicación" iconName="map">
                   <View
                     className="rounded-2xl p-4"
                     style={{
@@ -653,23 +677,6 @@ export default function DetallesScreen() {
                     }}
                   >
                     <View className="gap-3">
-                      <View
-                        className="rounded-xl p-3"
-                        style={{ backgroundColor: colors.background }}
-                      >
-                        <Text className="text-xs text-muted mb-1">
-                          Dirección
-                        </Text>
-                        {sitio.direccion ? (
-                          <Text className="text-base text-foreground">
-                            {sitio.direccion}
-                          </Text>
-                        ) : (
-                          <Text className="text-sm text-muted">
-                            Sin dirección especificada
-                          </Text>
-                        )}
-                      </View>
                       <Separador />
 
                       <View

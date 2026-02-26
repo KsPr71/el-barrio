@@ -752,17 +752,15 @@ export function FormularioSitio({
           </Pressable>
         </Pressable>
       </Modal>
-      {isAdmin && (
-        <>
-          <Text style={[styles.label, { color: colors.muted }]}>Imágenes</Text>
-          <ImageUploadSitio
-            nombreSitio={nombre.trim() || "sitio"}
-            value={imagenes}
-            onChange={setImagenes}
-            disabled={loading}
-          />
-        </>
-      )}
+      <>
+        <Text style={[styles.label, { color: colors.muted }]}>Imágenes</Text>
+        <ImageUploadSitio
+          nombreSitio={nombre.trim() || "sitio"}
+          value={imagenes}
+          onChange={setImagenes}
+          disabled={loading}
+        />
+      </>
       {mode === "edit" && isAdmin && (
         <>
           <Text style={[styles.label, { color: colors.muted }]}>Estado</Text>

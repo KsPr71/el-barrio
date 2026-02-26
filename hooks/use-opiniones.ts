@@ -4,7 +4,6 @@ import {
   getCachedOpinionesBySitioId,
   replaceCachedOpinionesForSitio,
 } from "@/lib/offline-sitios-db";
-import { useSyncStatus } from "@/contexts/sync-status-context";
 
 export type Opinion = {
   id: string;
@@ -35,7 +34,6 @@ function getErrorMessage(e: unknown, fallback: string): string {
 }
 
 export function useOpiniones(sitioId: number | null) {
-  const { startSync, endSync } = useSyncStatus();
   const [opiniones, setOpiniones] = useState<Opinion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,9 +69,6 @@ export function useOpiniones(sitioId: number | null) {
       return;
     }
 
-    const syncKey = `opi_${sitioId}_${Date.now()}`;
-    startSync(syncKey);
-    let ok = true;
     setLoading(true);
     setError(null);
     try {
@@ -95,16 +90,14 @@ export function useOpiniones(sitioId: number | null) {
         console.warn("[useOpiniones] error al guardar cache SQLite:", e);
       });
     } catch (e) {
-      ok = false;
       const msg = getErrorMessage(e, "Error al cargar opiniones");
       setError(msg);
       setOpiniones([]);
       setStats({ promedio: 0, total: 0, distribucion: {} });
     } finally {
       setLoading(false);
-      endSync(syncKey, ok);
     }
-  }, [sitioId, computeStats, startSync, endSync]);
+  }, [sitioId, computeStats]);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,6 +109,12 @@ export function useOpiniones(sitioId: number | null) {
         setLoading(false);
         return;
       }
+
+      // Cuando cambia el sitio, limpiamos inmediatamente el estado para evitar
+      // mostrar opiniones de otro sitio mientras se carga.
+      setOpiniones([]);
+      setStats({ promedio: 0, total: 0, distribucion: {} });
+      setLoading(true);
 
       // 1) SQLite primero (offline/instantáneo)
       try {
