@@ -6,6 +6,7 @@ import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
 import { isHorarioAbierto } from "@/lib/horario";
 import { Image } from "expo-image";
+import { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Separador } from "./separador";
 import { IconSymbol } from "./ui/icon-symbol";
@@ -34,6 +35,26 @@ export function SitioRelevanteCard({
   const { tipos } = useTiposSitio();
   const imagenUrl = getFirstImageUrl(sitio.imagenes);
   const { stats } = useOpiniones(sitio.id);
+  const [abierto, setAbierto] = useState<boolean | null>(() =>
+    isHorarioAbierto(sitio.horario),
+  );
+
+  // Recalcular estado abierto/cerrado periódicamente mientras la card esté montada.
+  useEffect(() => {
+    let cancelled = false;
+
+    const update = () => {
+      if (cancelled) return;
+      setAbierto(isHorarioAbierto(sitio.horario));
+    };
+
+    update(); // cálculo inicial
+    const id = setInterval(update, 15_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [sitio.horario]);
 
   const tipoSitio =
     sitio.tipo_sitio_id != null
@@ -86,8 +107,7 @@ export function SitioRelevanteCard({
           >
             {sitio.nombre}
           </Text>
-          {(isHorarioAbierto(sitio.horario) === true ||
-            isHorarioAbierto(sitio.horario) === false) && (
+          {(abierto === true || abierto === false) && (
             <View
               style={{
                 paddingHorizontal: 8,
@@ -95,15 +115,11 @@ export function SitioRelevanteCard({
                 paddingVertical: 4,
                 borderRadius: 12,
                 backgroundColor:
-                  isHorarioAbierto(sitio.horario) === true
-                    ? "#16a34a"
-                    : "#dc2626",
+                  abierto === true ? "#16a34a" : "#dc2626",
               }}
             >
               <Text className="text-[10px] font-semibold text-white">
-                {isHorarioAbierto(sitio.horario) === true
-                  ? "Abierto"
-                  : "Cerrado"}
+                {abierto === true ? "Abierto" : "Cerrado"}
               </Text>
             </View>
           )}

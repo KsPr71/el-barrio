@@ -147,93 +147,65 @@ export function useSitiosRelevantes() {
       finished = true;
       endSync(syncKey, ok);
     };
-    
+
     try {
       setLoading(true);
       setLoadingMore(false);
       setError(null);
-      try {
-        // 1) Cargar rápido la primera página para pintar la pantalla
-        const first = await fetchPage(0, PAGE_SIZE - 1);
-        if (requestIdRef.current !== requestId) {
-          finish(false);
-          return;
-        }
-        // IMPORTANTE: Si ya mostramos sitios desde SQLite, NO debemos reemplazar la lista
-        // completa por una página parcial (provoca que algunos sitios "desaparezcan" y reaparezcan).
-        const firstSorted = sortSitios(first);
-        setSitios((prev) => {
-          const base = prev.length > 0 ? prev : firstSorted;
-          const merged = mergeById(base, firstSorted);
-          const next = sortSitios(merged);
-          cachedSitiosRelevantes = next;
-          return next;
-        });
-      } catch (e) {
-        const msg = getErrorMessage(e, "Error al cargar sitios relevantes");
-        setError(msg);
-        cachedSitiosRelevantes = null;
-        setSitios([]);
-        // Si falla la primera página, terminamos aquí
-        finish(false);
-        return;
-      } finally {
-        if (requestIdRef.current === requestId) {
-          setLoading(false);
-        }
-      }
 
-      // 2) Cargar el resto en segundo plano (sin bloquear UI)
+      // 1) Cargar todas las páginas desde Supabase y construir un snapshot completo.
+      const allPages: SitioRelevante[] = [];
+
+      // Primera página
+      const first = await fetchPage(0, PAGE_SIZE - 1);
       if (requestIdRef.current !== requestId) {
         finish(false);
         return;
       }
-      setLoadingMore(true);
-      try {
-        let offset = PAGE_SIZE;
-        // Seguir mientras sigan llegando páginas completas
-        const allPages: SitioRelevante[] = [];
-        for (;;) {
-          if (requestIdRef.current !== requestId) {
-            finish(false);
-            return;
-          }
-          const page = await fetchPage(offset, offset + PAGE_SIZE - 1);
-          if (requestIdRef.current !== requestId) {
-            finish(false);
-            return;
-          }
-          if (page.length === 0) break;
-          allPages.push(...page);
-          if (page.length < PAGE_SIZE) break;
-          offset += PAGE_SIZE;
-        }
+      allPages.push(...first);
 
-      // Al finalizar, ya tenemos la lista completa del servidor (primera + resto).
-      // Reemplazamos por la fuente de verdad (pero sin el "parpadeo" de páginas parciales).
-      const serverAll = sortSitios(mergeById([], [...cachedSitiosRelevantes ?? [], ...allPages]));
+      // Resto de páginas
+      setLoadingMore(true);
+      let offset = PAGE_SIZE;
+      for (;;) {
+        if (requestIdRef.current !== requestId) {
+          finish(false);
+          return;
+        }
+        const page = await fetchPage(offset, offset + PAGE_SIZE - 1);
+        if (requestIdRef.current !== requestId) {
+          finish(false);
+          return;
+        }
+        if (page.length === 0) break;
+        allPages.push(...page);
+        if (page.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+      }
+
+      // 2) Ordenar y reemplazar lista completa por la fuente de verdad del servidor.
+      const serverAll = sortSitios(allPages);
       cachedSitiosRelevantes = serverAll;
       setSitios(serverAll);
-      } catch (e) {
-        // Si falla la carga incremental, mantenemos lo ya cargado y solo mostramos el error.
-        const msg = getErrorMessage(e, "Error al cargar más sitios");
-        setError(msg);
-      } finally {
-        if (requestIdRef.current === requestId) {
-          setLoadingMore(false);
-        }
-      }
-      // Sincronizar cache persistente en segundo plano con la última lista conocida
-      if (cachedSitiosRelevantes && cachedSitiosRelevantes.length > 0) {
-        void replaceCachedSitiosRelevantes(cachedSitiosRelevantes).catch((e) => {
+
+      // 3) Actualizar cache SQLite en segundo plano.
+      if (serverAll.length > 0) {
+        void replaceCachedSitiosRelevantes(serverAll).catch((e) => {
           console.warn("[useSitiosRelevantes] error al guardar cache SQLite:", e);
         });
       }
+
       finish(true);
     } catch (e) {
-      // Catch-all para cualquier error inesperado
-      console.error("[useSitiosRelevantes] error inesperado en fetchSitios:", e);
+      const msg = getErrorMessage(e, "Error al cargar sitios relevantes");
+      setError(msg);
+      // En caso de error, mantenemos lo que ya había en memoria / SQLite.
       finish(false);
+    } finally {
+      if (requestIdRef.current === requestId) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
   }, [fetchPage, startSync, endSync]);
 
