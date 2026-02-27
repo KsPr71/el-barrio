@@ -30,6 +30,29 @@ export type SitioRelevante = {
   sitio_web: string | null;
 };
 
+function sortSitios(list: SitioRelevante[]): SitioRelevante[] {
+  const next = [...list];
+  next.sort((a, b) => {
+    if (a.tipo_sitio_id !== b.tipo_sitio_id) {
+      if (a.tipo_sitio_id === null) return 1;
+      if (b.tipo_sitio_id === null) return -1;
+      return a.tipo_sitio_id - b.tipo_sitio_id;
+    }
+    return b.promedio_puntuacion - a.promedio_puntuacion;
+  });
+  return next;
+}
+
+function mergeById(
+  base: SitioRelevante[],
+  incoming: SitioRelevante[],
+): SitioRelevante[] {
+  const map = new Map<number, SitioRelevante>();
+  for (const s of base) map.set(s.id, s);
+  for (const s of incoming) map.set(s.id, s);
+  return Array.from(map.values());
+}
+
 function getErrorMessage(e: unknown, fallback: string): string {
   if (e instanceof Error) return e.message;
   if (
@@ -136,17 +159,16 @@ export function useSitiosRelevantes() {
           finish(false);
           return;
         }
-        // Ordenar primera página por tipo_sitio_id y luego por puntuación
-        first.sort((a, b) => {
-          if (a.tipo_sitio_id !== b.tipo_sitio_id) {
-            if (a.tipo_sitio_id === null) return 1;
-            if (b.tipo_sitio_id === null) return -1;
-            return a.tipo_sitio_id - b.tipo_sitio_id;
-          }
-          return b.promedio_puntuacion - a.promedio_puntuacion;
+        // IMPORTANTE: Si ya mostramos sitios desde SQLite, NO debemos reemplazar la lista
+        // completa por una página parcial (provoca que algunos sitios "desaparezcan" y reaparezcan).
+        const firstSorted = sortSitios(first);
+        setSitios((prev) => {
+          const base = prev.length > 0 ? prev : firstSorted;
+          const merged = mergeById(base, firstSorted);
+          const next = sortSitios(merged);
+          cachedSitiosRelevantes = next;
+          return next;
         });
-        cachedSitiosRelevantes = first;
-        setSitios(first);
       } catch (e) {
         const msg = getErrorMessage(e, "Error al cargar sitios relevantes");
         setError(msg);
@@ -186,32 +208,12 @@ export function useSitiosRelevantes() {
           if (page.length < PAGE_SIZE) break;
           offset += PAGE_SIZE;
         }
-        
-        // Ordenar todos los sitios: primero por tipo_sitio_id, luego por promedio_puntuacion descendente
-        allPages.sort((a, b) => {
-          // Primero agrupar por tipo_sitio_id (nulls al final)
-          if (a.tipo_sitio_id !== b.tipo_sitio_id) {
-            if (a.tipo_sitio_id === null) return 1;
-            if (b.tipo_sitio_id === null) return -1;
-            return a.tipo_sitio_id - b.tipo_sitio_id;
-          }
-          // Dentro del mismo tipo, ordenar por puntuación descendente
-          return b.promedio_puntuacion - a.promedio_puntuacion;
-        });
-        
-        setSitios((prev) => {
-          const combined = [...prev, ...allPages];
-          combined.sort((a, b) => {
-            if (a.tipo_sitio_id !== b.tipo_sitio_id) {
-              if (a.tipo_sitio_id === null) return 1;
-              if (b.tipo_sitio_id === null) return -1;
-              return a.tipo_sitio_id - b.tipo_sitio_id;
-            }
-            return b.promedio_puntuacion - a.promedio_puntuacion;
-          });
-          cachedSitiosRelevantes = combined;
-          return combined;
-        });
+
+      // Al finalizar, ya tenemos la lista completa del servidor (primera + resto).
+      // Reemplazamos por la fuente de verdad (pero sin el "parpadeo" de páginas parciales).
+      const serverAll = sortSitios(mergeById([], [...cachedSitiosRelevantes ?? [], ...allPages]));
+      cachedSitiosRelevantes = serverAll;
+      setSitios(serverAll);
       } catch (e) {
         // Si falla la carga incremental, mantenemos lo ya cargado y solo mostramos el error.
         const msg = getErrorMessage(e, "Error al cargar más sitios");
