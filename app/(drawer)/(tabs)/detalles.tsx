@@ -9,11 +9,10 @@ import { Collapsible } from "@/components/ui/collapsible";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { TipoSitioChip } from "@/components/ui/tipo-sitio";
 import { useColors } from "@/hooks/use-colors";
-import { useHorarioLiveStatus } from "@/hooks/use-horario-live";
 import { useOpiniones } from "@/hooks/use-opiniones";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
-import { formatHorarioForDisplay } from "@/lib/horario";
+import { formatHorarioForDisplay, isHorarioAbierto } from "@/lib/horario";
 import { getCachedSitioRelevanteById } from "@/lib/offline-sitios-db";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -67,7 +66,6 @@ export default function DetallesScreen() {
     crearOpinion,
     refresh: refreshOpiniones,
   } = useOpiniones(sitioId);
-  const { abierto } = useHorarioLiveStatus(sitio?.horario ?? null);
   const { tipos } = useTiposSitio();
   const [mapReloadKey, setMapReloadKey] = useState(0);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
@@ -372,7 +370,7 @@ export default function DetallesScreen() {
                   title="Horario"
                   iconName="clock.fill"
                   trailingElement={
-                    abierto === true ? (
+                    isHorarioAbierto(sitio.horario) === true ? (
                       <View
                         className="rounded-full px-2.5 py-1"
                         style={{ backgroundColor: "#16a34a" }}
@@ -384,7 +382,7 @@ export default function DetallesScreen() {
                           Abierto
                         </Text>
                       </View>
-                    ) : abierto === false ? (
+                    ) : isHorarioAbierto(sitio.horario) === false ? (
                       <View
                         className="rounded-full px-2.5 py-1"
                         style={{ backgroundColor: "#dc2626" }}

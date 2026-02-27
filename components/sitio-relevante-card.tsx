@@ -1,10 +1,10 @@
 import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
 import { TipoSitioChip } from "@/components/ui/tipo-sitio";
 import { useColors } from "@/hooks/use-colors";
-import { useHorarioLiveStatus } from "@/hooks/use-horario-live";
 import { useOpiniones } from "@/hooks/use-opiniones";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
+import { isHorarioAbierto } from "@/lib/horario";
 import { Image } from "expo-image";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Separador } from "./separador";
@@ -34,7 +34,6 @@ export function SitioRelevanteCard({
   const { tipos } = useTiposSitio();
   const imagenUrl = getFirstImageUrl(sitio.imagenes);
   const { stats } = useOpiniones(sitio.id);
-  const { abierto } = useHorarioLiveStatus(sitio.horario);
 
   const tipoSitio =
     sitio.tipo_sitio_id != null
@@ -87,7 +86,8 @@ export function SitioRelevanteCard({
           >
             {sitio.nombre}
           </Text>
-          {(abierto === true || abierto === false) && (
+          {(isHorarioAbierto(sitio.horario) === true ||
+            isHorarioAbierto(sitio.horario) === false) && (
             <View
               style={{
                 paddingHorizontal: 8,
@@ -95,13 +95,15 @@ export function SitioRelevanteCard({
                 paddingVertical: 4,
                 borderRadius: 12,
                 backgroundColor:
-                  abierto === true
+                  isHorarioAbierto(sitio.horario) === true
                     ? "#16a34a"
                     : "#dc2626",
               }}
             >
               <Text className="text-[10px] font-semibold text-white">
-                {abierto === true ? "Abierto" : "Cerrado"}
+                {isHorarioAbierto(sitio.horario) === true
+                  ? "Abierto"
+                  : "Cerrado"}
               </Text>
             </View>
           )}
