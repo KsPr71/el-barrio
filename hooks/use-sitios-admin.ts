@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type SitioRelevanteAdmin = {
   id: number;
@@ -68,8 +68,24 @@ export function useSitiosAdmin() {
   const [sitios, setSitios] = useState<SitioRelevanteAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
+
+  function withTimeout<T>(
+    promise: PromiseLike<T>,
+    ms: number,
+    label: string,
+  ): Promise<T> {
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const timeout = new Promise<never>((_, reject) => {
+      t = setTimeout(() => reject(new Error(`Timeout (${label})`)), ms);
+    });
+    return Promise.race([Promise.resolve(promise), timeout]).finally(() => {
+      if (t) clearTimeout(t);
+    }) as Promise<T>;
+  }
 
   const fetchSitios = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     if (!user) {
       setSitios([]);
       setLoading(false);
@@ -78,7 +94,8 @@ export function useSitiosAdmin() {
     setLoading(true);
     setError(null);
     try {
-      await supabase.rpc("expirar_suscripciones").then(({ error }) => {
+      // No debe bloquear la carga de la lista (si cuelga, puede dejar el spinner infinito).
+      void supabase.rpc("expirar_suscripciones").then(({ error }) => {
         if (error) console.warn("[useSitiosAdmin] expirar_suscripciones:", error.message);
       });
       let query = supabase
@@ -91,15 +108,19 @@ export function useSitiosAdmin() {
       if (!isAdmin) {
         query = query.eq("creado_por", user.id);
       }
-      const { data, error: err } = await query;
+      const { data, error: err } = await withTimeout(query, 12000, "cargar sitios");
+      if (requestIdRef.current !== requestId) return;
       if (err) throw err;
       setSitios((data ?? []) as SitioRelevanteAdmin[]);
     } catch (e) {
+      if (requestIdRef.current !== requestId) return;
       const msg = getErrorMessage(e, "Error al cargar sitios");
       setError(msg);
       setSitios([]);
     } finally {
-      setLoading(false);
+      if (requestIdRef.current === requestId) {
+        setLoading(false);
+      }
     }
   }, [user, isAdmin]);
 

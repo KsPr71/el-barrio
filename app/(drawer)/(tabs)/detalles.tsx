@@ -9,16 +9,17 @@ import { Collapsible } from "@/components/ui/collapsible";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { TipoSitioChip } from "@/components/ui/tipo-sitio";
 import { useColors } from "@/hooks/use-colors";
+import { useHorarioLiveStatus } from "@/hooks/use-horario-live";
 import { useOpiniones } from "@/hooks/use-opiniones";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
-import { formatHorarioForDisplay, isHorarioAbierto } from "@/lib/horario";
+import { formatHorarioForDisplay } from "@/lib/horario";
 import { getCachedSitioRelevanteById } from "@/lib/offline-sitios-db";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -52,7 +53,6 @@ function getFirstImageUrl(imagenes: string | null): string | null {
 export default function DetallesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [sitio, setSitio] = useState<SitioRelevante | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +67,7 @@ export default function DetallesScreen() {
     crearOpinion,
     refresh: refreshOpiniones,
   } = useOpiniones(sitioId);
+  const { abierto } = useHorarioLiveStatus(sitio?.horario ?? null);
   const { tipos } = useTiposSitio();
   const [mapReloadKey, setMapReloadKey] = useState(0);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
@@ -371,7 +372,7 @@ export default function DetallesScreen() {
                   title="Horario"
                   iconName="clock.fill"
                   trailingElement={
-                    isHorarioAbierto(sitio.horario) === true ? (
+                    abierto === true ? (
                       <View
                         className="rounded-full px-2.5 py-1"
                         style={{ backgroundColor: "#16a34a" }}
@@ -383,7 +384,7 @@ export default function DetallesScreen() {
                           Abierto
                         </Text>
                       </View>
-                    ) : isHorarioAbierto(sitio.horario) === false ? (
+                    ) : abierto === false ? (
                       <View
                         className="rounded-full px-2.5 py-1"
                         style={{ backgroundColor: "#dc2626" }}

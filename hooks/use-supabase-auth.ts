@@ -163,6 +163,17 @@ export function useSupabaseAuth() {
     return () => subscription.unsubscribe();
   }, [refreshSession, fetchProfile]);
 
+  // Fallback de seguridad: si por alguna razón getSession tarda demasiado
+  // (red lenta, Supabase frío, etc.), no bloqueamos indefinidamente la UI.
+  useEffect(() => {
+    if (!loading) return;
+    const timeout = setTimeout(() => {
+      // Si sigue en loading y no hay sesión, mostramos el formulario igualmente.
+      setLoading(false);
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
   const isAdmin = profile?.role === "admin";
   const isAuthenticated = !!user;
 
