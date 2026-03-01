@@ -166,7 +166,7 @@ function CustomDrawerContent(props: any) {
   const isDetallesActive = pathname.includes("/detalles");
   const isProfileActive = pathname.includes("/profile");
   const isAquiHayActive = pathname.includes("/aqui-hay");
-  const WHATSAPP_NUMERO = "5352708602";
+  const WHATSAPP_NUMERO = "56931759";
   const URL_WHATSAPP = `https://wa.me/${WHATSAPP_NUMERO}`;
 
   const handleEnviarWhatsAppObservaciones = () => {

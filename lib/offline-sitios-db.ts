@@ -24,11 +24,26 @@ function isLockedError(e: unknown): boolean {
   return msg.includes("database is locked");
 }
 
+/** Error conocido: NativeDatabase/SharedObject corrupto o liberado prematuramente */
+function isSharedObjectError(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const msg = String((e as { message?: unknown }).message ?? e);
+  return (
+    msg.includes("prepareAsync") ||
+    msg.includes("SharedObject") ||
+    msg.includes("java.lang.Integer")
+  );
+}
+
 async function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (!dbPromise) {
     dbPromise = SQLite.openDatabaseAsync("por-el-barrio-cache.db");
   }
   return dbPromise;
+}
+
+function resetDb(): void {
+  dbPromise = null;
 }
 
 async function ensureTables() {
@@ -333,19 +348,28 @@ export async function replaceCachedTiposSitio(tipos: TipoSitio[]): Promise<void>
 
 export async function getCachedOpinionesBySitioId(
   sitioId: number,
+  isRetry = false,
 ): Promise<Opinion[]> {
-  await ensureTables();
-  const db = await getDb();
-  const rows = await db.getAllAsync<Opinion>(
-    `
+  try {
+    await ensureTables();
+    const db = await getDb();
+    const rows = await db.getAllAsync<Opinion>(
+      `
       SELECT id, sitio_id, calificacion, comentario, autor_texto, creado_at
       FROM opiniones_cache
       WHERE sitio_id = ?
       ORDER BY creado_at DESC
     `,
-    [sitioId],
-  );
-  return rows ?? [];
+      [sitioId],
+    );
+    return rows ?? [];
+  } catch (e) {
+    if (isSharedObjectError(e) && !isRetry) {
+      resetDb();
+      return getCachedOpinionesBySitioId(sitioId, true);
+    }
+    throw e;
+  }
 }
 
 export async function replaceCachedOpinionesForSitio(

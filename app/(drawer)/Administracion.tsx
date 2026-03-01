@@ -29,17 +29,17 @@ const ESTADO_LABELS: Record<string, string> = {
   en_revision: "En revisión",
   aceptado: "Aceptado",
 };
-const WHATSAPP_NUMERO = "5352708602";
+const WHATSAPP_NUMERO = "56931759";
 const URL_WHATSAPP = `https://wa.me/${WHATSAPP_NUMERO}`;
 
-const handleEnviarWhatsAppObservaciones = () => {
-  const mensaje =
-    "Hola, me pongo en contacto para completar el registro de mi negocio llamado "; // Tu mensaje aquí
-  const mensajeCodificado = encodeURIComponent(mensaje);
-  const urlWhatsApp = `${URL_WHATSAPP}?text=${mensajeCodificado}`;
-
-  Linking.openURL(urlWhatsApp);
-};
+function buildMensajeWhatsApp(nombreSitio: string | null): string {
+  const base =
+    "Hola, me pongo en contacto para completar el registro de mi negocio";
+  if (nombreSitio?.trim()) {
+    return `${base} llamado ${nombreSitio.trim()}.`;
+  }
+  return `${base}.`;
+}
 
 function formatTiempoSuscripcion(fechaAceptado: string | null): string | null {
   if (!fechaAceptado) return null;
@@ -611,7 +611,12 @@ export default function AdministracionScreen() {
 
       {/* Boton de whatssapp */}
       <TouchableOpacity
-        onPress={handleEnviarWhatsAppObservaciones}
+        onPress={() => {
+          const nombreSitio = sitios.length > 0 ? sitios[0].nombre : null;
+          const mensaje = buildMensajeWhatsApp(nombreSitio);
+          const urlWhatsApp = `${URL_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
+          Linking.openURL(urlWhatsApp);
+        }}
         style={[
           styles.fabws,
           { backgroundColor: "#25d366", padding: 10, marginTop: 15 },
