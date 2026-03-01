@@ -179,9 +179,7 @@ export default function AdministracionScreen() {
     let base = sitios;
 
     if (isAdmin && estadoFiltro !== "todos") {
-      base = base.filter(
-        (s) => s.estado_suscripcion === estadoFiltro,
-      );
+      base = base.filter((s) => s.estado_suscripcion === estadoFiltro);
     }
 
     if (!isAdmin || !busqueda.trim()) return base;
@@ -475,7 +473,9 @@ export default function AdministracionScreen() {
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
             >
-              <Text style={[styles.searchIcon, { color: colors.muted }]}>🔍</Text>
+              <Text style={[styles.searchIcon, { color: colors.muted }]}>
+                🔍
+              </Text>
               <TextInput
                 value={busqueda}
                 onChangeText={setBusqueda}
@@ -484,12 +484,7 @@ export default function AdministracionScreen() {
                 style={[styles.searchInput, { color: colors.foreground }]}
               />
             </View>
-            <View
-              style={[
-                styles.chipRow,
-                { marginTop: 8 },
-              ]}
-            >
+            <View style={[styles.chipRow, { marginTop: 8, marginBottom: 10 }]}>
               {(["todos", "creado", "en_revision", "aceptado"] as const).map(
                 (estado) => {
                   const isActive = estadoFiltro === estado;
@@ -502,13 +497,15 @@ export default function AdministracionScreen() {
                           ? "En revisión"
                           : "Aceptado";
                   const bg =
-                    estado === "creado"
+                    estado === "todos"
                       ? colors.primary
-                      : estado === "en_revision"
-                        ? colors.secondary
-                        : estado === "aceptado"
-                          ? colors.success
-                          : colors.surface;
+                      : estado === "creado"
+                        ? colors.primary
+                        : estado === "en_revision"
+                          ? colors.secondary
+                          : estado === "aceptado"
+                            ? colors.success
+                            : colors.surface;
                   return (
                     <TouchableOpacity
                       key={estado}
