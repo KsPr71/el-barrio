@@ -21,6 +21,7 @@ import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { RootErrorBoundary } from "@/components/root-error-boundary";
 import { HeaderCategoryProvider } from "@/contexts/header-category-context";
+import { OpinionStatsProvider } from "@/contexts/opinion-stats-context";
 import { SyncStatusProvider } from "@/contexts/sync-status-context";
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
@@ -106,7 +107,8 @@ export default function RootLayout() {
         <trpc.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
             <SyncStatusProvider>
-              <HeaderCategoryProvider>
+              <OpinionStatsProvider>
+                <HeaderCategoryProvider>
                 {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
                 {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
                 {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
@@ -115,7 +117,8 @@ export default function RootLayout() {
                   <Stack.Screen name="oauth/callback" />
                 </Stack>
                 <StatusBar style="auto" />
-              </HeaderCategoryProvider>
+                </HeaderCategoryProvider>
+              </OpinionStatsProvider>
             </SyncStatusProvider>
           </QueryClientProvider>
         </trpc.Provider>

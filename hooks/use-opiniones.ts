@@ -1,3 +1,4 @@
+import { useOpinionStats } from "@/contexts/opinion-stats-context";
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -33,7 +34,31 @@ function getErrorMessage(e: unknown, fallback: string): string {
   return fallback;
 }
 
+function computeStatsFromOpiniones(opinionesData: Opinion[]): OpinionStats {
+  if (opinionesData.length === 0) {
+    return { promedio: 0, total: 0, distribucion: {} };
+  }
+  const suma = opinionesData.reduce((acc, o) => acc + o.calificacion, 0);
+  const promedio = suma / opinionesData.length;
+  const distribucion: { [key: number]: number } = {
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+  };
+  opinionesData.forEach((o) => {
+    distribucion[o.calificacion] = (distribucion[o.calificacion] || 0) + 1;
+  });
+  return {
+    promedio: Math.round(promedio * 10) / 10,
+    total: opinionesData.length,
+    distribucion,
+  };
+}
+
 export function useOpiniones(sitioId: number | null) {
+  const { notifyOpinionUpdated } = useOpinionStats();
   const [opiniones, setOpiniones] = useState<Opinion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,29 +69,16 @@ export function useOpiniones(sitioId: number | null) {
   });
 
   const computeStats = useCallback((opinionesData: Opinion[]) => {
-    if (opinionesData.length > 0) {
-      const suma = opinionesData.reduce((acc, o) => acc + o.calificacion, 0);
-      const promedio = suma / opinionesData.length;
-      const distribucion: { [key: number]: number } = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      opinionesData.forEach((o) => {
-        distribucion[o.calificacion] = (distribucion[o.calificacion] || 0) + 1;
-      });
-      setStats({
-        promedio: Math.round(promedio * 10) / 10,
-        total: opinionesData.length,
-        distribucion,
-      });
-    } else {
-      setStats({ promedio: 0, total: 0, distribucion: {} });
-    }
+    const next = computeStatsFromOpiniones(opinionesData);
+    setStats(next);
   }, []);
 
-  const fetchOpiniones = useCallback(async () => {
+  const fetchOpiniones = useCallback(async (): Promise<Opinion[] | null> => {
     if (!sitioId) {
       setOpiniones([]);
       setStats({ promedio: 0, total: 0, distribucion: {} });
       setLoading(false);
-      return;
+      return null;
     }
 
     setLoading(true);
@@ -89,11 +101,13 @@ export function useOpiniones(sitioId: number | null) {
       void replaceCachedOpinionesForSitio(sitioId, opinionesData).catch((e) => {
         console.warn("[useOpiniones] error al guardar cache SQLite:", e);
       });
+      return opinionesData;
     } catch (e) {
       const msg = getErrorMessage(e, "Error al cargar opiniones");
       setError(msg);
       setOpiniones([]);
       setStats({ promedio: 0, total: 0, distribucion: {} });
+      return null;
     } finally {
       setLoading(false);
     }
@@ -159,13 +173,17 @@ export function useOpiniones(sitioId: number | null) {
         }
 
         // Refrescar opiniones después de crear
-        await fetchOpiniones();
+        const opinionesData = await fetchOpiniones();
+        if (opinionesData) {
+          const { promedio, total } = computeStatsFromOpiniones(opinionesData);
+          notifyOpinionUpdated(sitioId, promedio, total);
+        }
       } catch (e) {
         const msg = getErrorMessage(e, "Error al crear opinión");
         throw new Error(msg);
       }
     },
-    [fetchOpiniones]
+    [fetchOpiniones, notifyOpinionUpdated]
   );
 
   return {

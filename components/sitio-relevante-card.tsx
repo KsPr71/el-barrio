@@ -1,5 +1,6 @@
 import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
 import { TipoSitioChip } from "@/components/ui/tipo-sitio";
+import { useOpinionStats } from "@/contexts/opinion-stats-context";
 import { useColors } from "@/hooks/use-colors";
 import { useOpiniones } from "@/hooks/use-opiniones";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
@@ -35,6 +36,11 @@ export function SitioRelevanteCard({
   const { tipos } = useTiposSitio();
   const imagenUrl = getFirstImageUrl(sitio.imagenes);
   const { stats } = useOpiniones(sitio.id);
+  const { lastUpdate } = useOpinionStats();
+  const displayStats =
+    lastUpdate?.sitioId === sitio.id
+      ? { promedio: lastUpdate.promedio, total: lastUpdate.total }
+      : stats;
   const [abierto, setAbierto] = useState<boolean | null>(() =>
     isHorarioAbierto(sitio.horario),
   );
@@ -125,11 +131,11 @@ export function SitioRelevanteCard({
           )}
         </View>
 
-        {stats.total > 0 && (
+        {displayStats.total > 0 && (
           <View className="mt-2">
             <EstrellasPuntuacion
-              promedio={stats.promedio}
-              total={stats.total}
+              promedio={displayStats.promedio}
+              total={displayStats.total}
               size={14}
               showNumber
               showTotal
