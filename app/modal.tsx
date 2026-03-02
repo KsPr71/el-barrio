@@ -4,6 +4,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useTeam } from "@/hooks/use-team";
 import Constants from "expo-constants";
+import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useMemo } from "react";
 import {
@@ -65,38 +66,36 @@ export default function ModalScreen() {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.iconWrap}>
+        <IconImage
+          source={require("@/assets/images/icon.png")}
+          style={[styles.appIcon, { borderColor: colors.secondary }]}
+        />
+      </View>
+      <Text style={[styles.appName, { color: colors.foreground }]}>
+        Por el Barrio
+      </Text>
+      <Text style={[styles.version, { color: colors.muted }]}>
+        Versión {Constants.expoConfig?.version ?? "1.0.0"}
+      </Text>
+
+      <Text
+        style={[
+          styles.purpose,
+          {
+            color: colors.muted,
+            textAlign: "center",
+            textAlignVertical: "center",
+          },
+        ]}
+      >
+        Descubre y conecta con los negocios y lugares destacados de tu
+        comunidad.
+      </Text>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.iconWrap}>
-          <IconImage
-            source={require("@/assets/images/icon.png")}
-            style={styles.appIcon}
-          />
-        </View>
-        <Text style={[styles.appName, { color: colors.foreground }]}>
-          Por el Barrio
-        </Text>
-        <Text style={[styles.version, { color: colors.muted }]}>
-          Versión {Constants.expoConfig?.version ?? "1.0.0"}
-        </Text>
-
-        <Text
-          style={[
-            styles.purpose,
-            {
-              color: colors.muted,
-              textAlign: "center",
-              textAlignVertical: "center",
-            },
-          ]}
-        >
-          Por el Barrio te permite descubrir y conectar con los negocios y
-          lugares destacados de tu comunidad. Encuentra sitios de interés,
-          opiniones y toda la información que necesitas cerca de ti.
-        </Text>
-
         <View
           style={[
             styles.section,
@@ -189,26 +188,32 @@ export default function ModalScreen() {
             </Text>
           )}
         </View>
+      </ScrollView>
+
+      <Text style={[styles.sectionLabelcompany, { color: colors.primary }]}>
+        Desarrollada por
+      </Text>
+      <TouchableOpacity
+        onPress={() =>
+          Linking.openURL("https://landing-page-ten-pi-77.vercel.app")
+        }
+      >
         <View
           style={[
-            styles.section,
+            styles.company,
             {
-              backgroundColor: colors.secondary + "30",
-              borderColor: colors.primary,
+              backgroundColor: "#000645",
+              borderColor: "#FFD700",
             },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.primary }]}>
-            Desarrollada por
-          </Text>
-
           <Image
-            source={require("@/assets/images/novadev1.png")}
+            source={require("@/assets/images/novadev2.png")}
             style={styles.novaDevImage}
             resizeMode="cover"
           />
         </View>
-      </ScrollView>
+      </TouchableOpacity>
     </ScreenContainer>
   );
 }
@@ -238,10 +243,14 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     marginBottom: 12,
+    alignSelf: "center",
+    marginTop: 10,
   },
   appIcon: {
     width: 88,
     height: 88,
+    borderRadius: 16,
+    borderWidth: 1,
   },
   appName: {
     fontSize: 24,
@@ -259,7 +268,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "center",
     marginBottom: 28,
-    paddingHorizontal: 4,
+    paddingHorizontal: 10,
+    marginHorizontal: 8,
   },
   section: {
     width: "100%",
@@ -269,6 +279,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: "center",
   },
+  company: {
+    width: "85%",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 16,
+    alignItems: "center",
+    alignSelf: "center",
+  },
   sectionLabel: {
     fontSize: 12,
     fontWeight: "600",
@@ -277,14 +296,25 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: "red",
   },
+
+  sectionLabelcompany: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    color: "red",
+    alignSelf: "center",
+    marginTop: 10,
+  },
   novaDevText: {
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 12,
   },
   novaDevImage: {
-    width: 160,
-    height: 36,
+    width: "70%",
+    height: 50,
   },
   devLine: {
     fontSize: 15,

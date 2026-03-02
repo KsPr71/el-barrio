@@ -146,9 +146,7 @@ export function FormularioSitio({
         telefono: telefono.trim()
           ? parseInt(telefono.replace(/\D/g, ""), 10) || null
           : null,
-        imagenes: isAdmin
-          ? imagenes.trim() || null
-          : (sitioInicial?.imagenes ?? null),
+        imagenes: imagenes.trim() || null,
         ofertas: ofertas.trim() || null,
         tipo_sitio_id: tipoSitioId ?? null,
         provincia_id: provinciaId ?? null,
