@@ -63,6 +63,7 @@ async function ensureTables() {
       telefono INTEGER,
       contador_opiniones INTEGER NOT NULL DEFAULT 0,
       provincia_id TEXT,
+      provincia_short_name TEXT,
       municipio_id TEXT,
       promedio_puntuacion REAL NOT NULL DEFAULT 0,
       horario TEXT,
@@ -103,6 +104,16 @@ async function ensureTables() {
     CREATE INDEX IF NOT EXISTS idx_municipio_cache_provincia_id
       ON municipio_cache (provincia_id);
   `);
+
+  // Migración simple: añadir columna provincia_short_name si no existe aún.
+  try {
+    await db.execAsync(`
+      ALTER TABLE sitios_relevantes_cache
+      ADD COLUMN provincia_short_name TEXT;
+    `);
+  } catch {
+    // Ignorar error si la columna ya existe.
+  }
 }
 
 export async function getCachedSitiosRelevantes(): Promise<SitioRelevante[]> {
@@ -121,6 +132,7 @@ export async function getCachedSitiosRelevantes(): Promise<SitioRelevante[]> {
     telefono: number | null;
     contador_opiniones: number;
     provincia_id: string | null;
+    provincia_short_name: string | null;
     municipio_id: string | null;
     promedio_puntuacion: number;
     horario: string | null;
@@ -142,6 +154,7 @@ export async function getCachedSitiosRelevantes(): Promise<SitioRelevante[]> {
         telefono,
         contador_opiniones,
         provincia_id,
+        provincia_short_name,
         municipio_id,
         promedio_puntuacion,
         horario,
@@ -170,6 +183,7 @@ export async function getCachedSitiosRelevantes(): Promise<SitioRelevante[]> {
     telefono: row.telefono,
     contador_opiniones: row.contador_opiniones,
     provincia_id: row.provincia_id,
+    provincia_short_name: row.provincia_short_name,
     municipio_id: row.municipio_id,
     promedio_puntuacion: row.promedio_puntuacion,
     horario: row.horario,
@@ -204,13 +218,14 @@ export async function replaceCachedSitiosRelevantes(
               telefono,
               contador_opiniones,
               provincia_id,
+              provincia_short_name,
               municipio_id,
               promedio_puntuacion,
               horario,
               facebook_link,
               instagram_link,
               sitio_web
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
           [
             sitio.id,
@@ -225,6 +240,7 @@ export async function replaceCachedSitiosRelevantes(
             sitio.telefono,
             sitio.contador_opiniones,
             sitio.provincia_id,
+            sitio.provincia_short_name,
             sitio.municipio_id,
             sitio.promedio_puntuacion,
             sitio.horario,
@@ -260,6 +276,7 @@ export async function getCachedSitioRelevanteById(
     telefono: number | null;
     contador_opiniones: number;
     provincia_id: string | null;
+    provincia_short_name: string | null;
     municipio_id: string | null;
     promedio_puntuacion: number;
     horario: string | null;
@@ -281,6 +298,7 @@ export async function getCachedSitioRelevanteById(
         telefono,
         contador_opiniones,
         provincia_id,
+        provincia_short_name,
         municipio_id,
         promedio_puntuacion,
         horario,
@@ -307,6 +325,7 @@ export async function getCachedSitioRelevanteById(
     telefono: row.telefono,
     contador_opiniones: row.contador_opiniones,
     provincia_id: row.provincia_id,
+    provincia_short_name: row.provincia_short_name,
     municipio_id: row.municipio_id,
     promedio_puntuacion: row.promedio_puntuacion,
     horario: row.horario,

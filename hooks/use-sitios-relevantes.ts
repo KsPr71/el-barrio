@@ -22,6 +22,8 @@ export type SitioRelevante = {
   telefono: number | null;
   contador_opiniones: number;
   provincia_id: string | null;
+  /** Nombre corto de la provincia (ej. \"Hab\", \"Mtzas\"), derivado de la relación con provincia_id */
+  provincia_short_name: string | null;
   municipio_id: string | null;
   promedio_puntuacion: number; // Promedio de calificaciones (0 si no hay opiniones)
   horario: string | null;
@@ -113,7 +115,27 @@ export function useSitiosRelevantes() {
     const { data, error: err } = await supabase
       .from("sitios_relevantes")
       .select(
-        "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id, horario, facebook_link, instagram_link, sitio_web",
+        [
+          "id",
+          "nombre",
+          "localizacion",
+          "descripcion",
+          "imagenes",
+          "ofertas",
+          "menus",
+          "tipo_sitio_id",
+          "direccion",
+          "telefono",
+          "contador_opiniones",
+          "provincia_id",
+          "municipio_id",
+          "horario",
+          "facebook_link",
+          "instagram_link",
+          "sitio_web",
+          // Relación con la tabla provincia para obtener short_name
+          "provincia:provincia_id (short_name)",
+        ].join(", "),
       )
       .eq("estado_suscripcion", "aceptado")
       .order("tipo_sitio_id", { ascending: true, nullsFirst: false })
@@ -123,16 +145,24 @@ export function useSitiosRelevantes() {
       console.error("[useSitiosRelevantes] error:", err);
       throw err;
     }
-    
-    const sitios = (data ?? []) as Omit<SitioRelevante, "promedio_puntuacion">[];
-    
+
+    type RawSitio = Omit<
+      SitioRelevante,
+      "promedio_puntuacion" | "provincia_short_name"
+    > & {
+      provincia?: { short_name: string | null } | null;
+    };
+
+    const sitios = (data ?? []) as RawSitio[];
+
     // Obtener promedios para estos sitios
     const sitioIds = sitios.map((s) => s.id);
     const promedios = await fetchPromedios(sitioIds);
-    
+
     // Combinar datos
     return sitios.map((sitio) => ({
       ...sitio,
+      provincia_short_name: sitio.provincia?.short_name ?? null,
       promedio_puntuacion: promedios.get(sitio.id) ?? 0,
     })) as SitioRelevante[];
   }, [fetchPromedios]);

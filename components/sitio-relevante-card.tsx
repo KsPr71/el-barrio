@@ -150,32 +150,57 @@ export function SitioRelevanteCard({
         ) : null}
         <Separador />
         {sitio.direccion ? (
-          <View className="mt-2 gap-1 flex-row items-center">
-            <View
-              className="flex-row items-center gap-2"
-              style={{
-                backgroundColor: colors.primary + "20",
-                padding: 2,
-                borderRadius: 30,
-              }}
-            >
-              <IconSymbol
-                name="location.fill"
-                size={20}
-                color={colors.primary}
-              />
+          <View className="mt-2 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-1 flex-1">
+              <View
+                className="flex-row items-center gap-2"
+                style={{
+                  backgroundColor: colors.primary + "20",
+                  padding: 2,
+                  borderRadius: 30,
+                }}
+              >
+                <IconSymbol
+                  name="location.fill"
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
+              <Text
+                className="text-xs text-muted ml-2"
+                style={{
+                  paddingHorizontal: 4,
+                  fontStyle: "italic",
+                  marginRight: 10,
+                }}
+                numberOfLines={2}
+              >
+                {sitio.direccion}
+              </Text>
             </View>
-            <Text
-              className="text-xs text-muted ml-2"
-              style={{
-                paddingHorizontal: 4,
-                fontStyle: "italic",
-                marginRight: 10,
-              }}
-              numberOfLines={2}
-            >
-              {sitio.direccion}
-            </Text>
+            {sitio.provincia_short_name ? (
+              <View
+                style={{
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 999,
+                  backgroundColor: colors.primary+ "20",
+                  marginLeft: 12,
+                  minWidth: 28,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: colors.primary + "60",
+                }}
+              >
+                <Text
+                  className="text-xs font-bold"
+                  style={{ color: colors.primary }}
+                >
+                  {sitio.provincia_short_name}
+                </Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
         {matchedWords && matchedWords.length > 0 ? (
