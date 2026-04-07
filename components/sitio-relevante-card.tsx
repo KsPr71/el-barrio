@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Separador } from "./separador";
 import { IconSymbol } from "./ui/icon-symbol";
+
 export interface SitioRelevanteCardProps {
   sitio: SitioRelevante;
   onPress?: () => void;
@@ -33,6 +34,13 @@ export function SitioRelevanteCard({
   tipo = null,
   matchedWords,
 }: SitioRelevanteCardProps) {
+  const CARD_RADIUS = 18;
+  const EDGE_RADIUS = CARD_RADIUS - 1;
+  const IMAGE_HEIGHT = 200;
+  const TEXT_PANEL_OVERLAP = Math.round(IMAGE_HEIGHT * 0.1);
+  const TEXT_PANEL_TOP_RADIUS = 24;
+  const ADDRESS_NOTCH_SIZE = 28;
+  const PANEL_BACKGROUND = "#F2F0EF";
   const colors = useColors();
   const imagenUrl = getFirstImageUrl(sitio.imagenes);
   const { lastUpdate } = useOpinionStats();
@@ -56,7 +64,7 @@ export function SitioRelevanteCard({
       setAbierto(isHorarioAbierto(sitio.horario));
     };
 
-    update(); // cálculo inicial
+    update();
     const id = setInterval(update, 15_000);
     return () => {
       cancelled = true;
@@ -68,11 +76,9 @@ export function SitioRelevanteCard({
 
   const content = (
     <View
-      className="rounded-2xl overflow-hidden border border-border"
+      className="rounded-2xl"
       style={{
-        backgroundColor: colors.surface,
-        borderColor: colors.border,
-        borderWidth: 1,
+        borderRadius: CARD_RADIUS,
         elevation: 3,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -80,144 +86,222 @@ export function SitioRelevanteCard({
         shadowRadius: 3.84,
       }}
     >
-      <View style={{ position: "relative" }}>
-        {imagenUrl ? (
-          <Image
-            source={{ uri: imagenUrl }}
-            style={{
-              width: "100%",
-              height: 160,
-              backgroundColor: colors.border,
-            }}
-            contentFit="cover"
-          />
-        ) : (
-          <View
-            className="w-full items-center justify-center"
-            style={{
-              height: 120,
-              backgroundColor: colors.border,
-            }}
-          >
-            <Text className="text-4xl">📍</Text>
-          </View>
-        )}
-        {tipoSitio && <TipoSitioChip tipo={tipoSitio} overlay />}
-      </View>
-      <View className="p-4">
-        <View className="flex-row items-center justify-between gap-2">
-          <Text
-            className="text-lg font-bold text-foreground flex-1"
-            numberOfLines={2}
-          >
-            {sitio.nombre}
-          </Text>
-          {(abierto === true || abierto === false) && (
-            <View
+      <View
+        className="overflow-hidden border border-border"
+        style={{
+          borderRadius: CARD_RADIUS,
+          backgroundColor: PANEL_BACKGROUND,
+          borderColor: colors.border,
+          borderWidth: 1,
+        }}
+      >
+        <View style={{ position: "relative" }}>
+          {imagenUrl ? (
+            <Image
+              source={{ uri: imagenUrl }}
               style={{
-                paddingHorizontal: 8,
-
-                paddingVertical: 4,
-                borderRadius: 12,
-                backgroundColor:
-                  abierto === true ? "#16a34a" : "#dc2626",
+                width: "100%",
+                height: IMAGE_HEIGHT,
+                backgroundColor: colors.border,
+                borderTopLeftRadius: EDGE_RADIUS,
+                borderTopRightRadius: EDGE_RADIUS,
+                borderBottomLeftRadius: 0,
+                borderBottomRightRadius: 0,
+              }}
+              contentFit="cover"
+            />
+          ) : (
+            <View
+              className="w-full items-center justify-center"
+              style={{
+                height: 120,
+                backgroundColor: colors.border,
+                borderTopLeftRadius: EDGE_RADIUS,
+                borderTopRightRadius: EDGE_RADIUS,
+                borderBottomLeftRadius: 0,
+                borderBottomRightRadius: 0,
               }}
             >
-              <Text className="text-[10px] font-semibold text-white">
-                {abierto === true ? "Abierto" : "Cerrado"}
-              </Text>
+              <Text className="text-4xl">📍</Text>
             </View>
           )}
+          {tipoSitio && <TipoSitioChip tipo={tipoSitio} overlay />}
         </View>
-
-        {displayStats.total > 0 && (
-          <View className="mt-2">
-            <EstrellasPuntuacion
-              promedio={displayStats.promedio}
-              total={displayStats.total}
-              size={14}
-              showNumber
-              showTotal
-            />
-          </View>
-        )}
-
-        {sitio.descripcion ? (
-          <Text className="text-sm text-muted mt-1 leading-5" numberOfLines={3}>
-            {sitio.descripcion}
-          </Text>
-        ) : null}
-        <Separador />
-        {sitio.direccion ? (
-          <View className="mt-2 flex-row items-center justify-between">
-            <View className="flex-row items-center gap-1 flex-1">
-              <View
-                className="flex-row items-center gap-2"
-                style={{
-                  backgroundColor: colors.primary + "20",
-                  padding: 2,
-                  borderRadius: 30,
-                }}
-              >
-                <IconSymbol
-                  name="location.fill"
-                  size={20}
-                  color={colors.primary}
-                />
-              </View>
-              <Text
-                className="text-xs text-muted ml-2"
-                style={{
-                  paddingHorizontal: 4,
-                  fontStyle: "italic",
-                  marginRight: 10,
-                }}
-                numberOfLines={2}
-              >
-                {sitio.direccion}
-              </Text>
-            </View>
-            {sitio.provincia_short_name ? (
+        <View
+          style={{
+            marginTop: -TEXT_PANEL_OVERLAP,
+            backgroundColor: PANEL_BACKGROUND,
+            borderTopLeftRadius: TEXT_PANEL_TOP_RADIUS,
+            borderTopRightRadius: TEXT_PANEL_TOP_RADIUS,
+            borderBottomLeftRadius: EDGE_RADIUS,
+            borderBottomRightRadius: EDGE_RADIUS,
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 10,
+            overflow: "hidden",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 10,
+            elevation: 2,
+          }}
+        >
+          <View className="flex-row items-center justify-between gap-2">
+            <Text
+              className="text-lg font-bold text-foreground flex-1"
+              numberOfLines={2}
+            >
+              {sitio.nombre}
+            </Text>
+            {(abierto === true || abierto === false) && (
               <View
                 style={{
                   paddingHorizontal: 8,
                   paddingVertical: 4,
-                  borderRadius: 999,
-                  backgroundColor: colors.primary+ "20",
-                  marginLeft: 12,
-                  minWidth: 28,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1,
-                  borderColor: colors.primary + "60",
+                  borderRadius: 12,
+                  backgroundColor: abierto === true ? "#16a34a" : "#dc2626",
                 }}
               >
-                <Text
-                  className="text-xs font-bold"
-                  style={{ color: colors.primary }}
-                >
-                  {sitio.provincia_short_name}
+                <Text className="text-[10px] font-semibold text-white">
+                  {abierto === true ? "Abierto" : "Cerrado"}
                 </Text>
               </View>
-            ) : null}
+            )}
           </View>
-        ) : null}
-        {matchedWords && matchedWords.length > 0 ? (
-          <View className="mt-2 flex-row flex-wrap items-center gap-1">
+
+          {displayStats.total > 0 && (
+            <View className="mt-2">
+              <EstrellasPuntuacion
+                promedio={displayStats.promedio}
+                total={displayStats.total}
+                size={14}
+                showNumber
+                showTotal
+              />
+            </View>
+          )}
+
+          {sitio.descripcion ? (
             <Text
-              className="text-xs"
-              style={{ color: colors.muted, fontWeight: "500" }}
+              className="text-sm mt-3 leading-5"
+              style={{ color: colors.foreground + "B3" }}
+              numberOfLines={3}
             >
-              En ofertas:
+              {sitio.descripcion}
             </Text>
-            <Text
-              className="text-xs"
-              style={{ color: colors.primary, fontWeight: "600" }}
-            >
-              {matchedWords.join(", ")}
-            </Text>
+          ) : null}
+          <View className="mt-0">
+            <Separador />
           </View>
-        ) : null}
+          {matchedWords && matchedWords.length > 0 ? (
+            <View className="mt-2 flex-row flex-wrap items-center gap-1">
+              <Text
+                className="text-xs"
+                style={{ color: colors.muted, fontWeight: "500" }}
+              >
+                En ofertas:
+              </Text>
+              <Text
+                className="text-xs"
+                style={{ color: colors.primary, fontWeight: "600" }}
+              >
+                {matchedWords.join(", ")}
+              </Text>
+            </View>
+          ) : null}
+          {sitio.direccion ? (
+            <View
+              className="flex-row items-center justify-between"
+              style={{
+                marginTop: 8,
+                backgroundColor: "transparent",
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 0,
+                borderBottomLeftRadius: EDGE_RADIUS - 2,
+                borderBottomRightRadius: EDGE_RADIUS - 2,
+                paddingHorizontal: 8,
+                paddingVertical: 8,
+                position: "relative",
+                overflow: "visible",
+              }}
+            >
+              <View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  top: -ADDRESS_NOTCH_SIZE / 2,
+                  left: -1,
+                  width: ADDRESS_NOTCH_SIZE,
+                  height: ADDRESS_NOTCH_SIZE,
+                  borderRadius: ADDRESS_NOTCH_SIZE / 2,
+                  backgroundColor: PANEL_BACKGROUND,
+                }}
+              />
+              <View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  top: -ADDRESS_NOTCH_SIZE / 2,
+                  right: -1,
+                  width: ADDRESS_NOTCH_SIZE,
+                  height: ADDRESS_NOTCH_SIZE,
+                  borderRadius: ADDRESS_NOTCH_SIZE / 2,
+                  backgroundColor: PANEL_BACKGROUND,
+                }}
+              />
+              <View className="flex-row items-center gap-1 flex-1">
+                <View
+                  className="flex-row items-center gap-2"
+                  style={{
+                    backgroundColor: colors.primary + "20",
+                    padding: 2,
+                    borderRadius: 30,
+                  }}
+                >
+                  <IconSymbol
+                    name="location.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                </View>
+                <Text
+                  className="text-xs text-muted ml-2"
+                  style={{
+                    paddingHorizontal: 4,
+                    fontStyle: "italic",
+                    marginRight: 10,
+                  }}
+                  numberOfLines={2}
+                >
+                  {sitio.direccion}
+                </Text>
+              </View>
+              {sitio.provincia_short_name ? (
+                <View
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 999,
+                    backgroundColor: colors.primary + "22",
+                    marginLeft: 12,
+                    minWidth: 28,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 1,
+                    borderColor: colors.primary + "60",
+                  }}
+                >
+                  <Text
+                    className="text-xs font-bold"
+                    style={{ color: colors.primary }}
+                  >
+                    {sitio.provincia_short_name}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
       </View>
     </View>
   );

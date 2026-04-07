@@ -6,7 +6,6 @@ import {
   replaceCachedMunicipiosForProvincia,
   replaceCachedProvincias,
 } from "@/lib/offline-sitios-db";
-import { useSyncStatus } from "@/contexts/sync-status-context";
 
 export type Provincia = { id: string; nombre: string };
 export type Municipio = { id: string; nombre: string; provincia_id: string };
@@ -20,7 +19,6 @@ function getErrorMessage(e: unknown, fallback: string): string {
 }
 
 export function useLocations() {
-  const { startSync, endSync } = useSyncStatus();
   const [provincias, setProvincias] = useState<Provincia[]>([]);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [loadingProvincias, setLoadingProvincias] = useState(true);
@@ -30,9 +28,6 @@ export function useLocations() {
   const fetchProvincias = useCallback(async () => {
     const hadLocal = provincias.length > 0;
     if (!hadLocal) setLoadingProvincias(true);
-    const syncKey = `prov_${Date.now()}`;
-    startSync(syncKey);
-    let ok = true;
     setError(null);
     try {
       const { data, error: err } = await supabase
@@ -49,15 +44,13 @@ export function useLocations() {
         console.warn("[useLocations] error al guardar provincia_cache:", e);
       });
     } catch (e) {
-      ok = false;
       const msg = getErrorMessage(e, "Error al cargar provincias");
       setError(msg);
       if (!hadLocal) setProvincias([]);
     } finally {
       setLoadingProvincias(false);
-      endSync(syncKey, ok);
     }
-  }, [startSync, endSync]);
+  }, [provincias.length]);
 
   const fetchMunicipios = useCallback(async (provinciaId: string | null) => {
     if (!provinciaId) {
@@ -67,9 +60,6 @@ export function useLocations() {
     }
     const hadLocal = municipios.length > 0;
     if (!hadLocal) setLoadingMunicipios(true);
-    const syncKey = `mun_${provinciaId}_${Date.now()}`;
-    startSync(syncKey);
-    let ok = true;
     setError(null);
     try {
       // 1) SQLite primero (si existe)
@@ -99,15 +89,13 @@ export function useLocations() {
         console.warn("[useLocations] error al guardar municipio_cache:", e);
       });
     } catch (e) {
-      ok = false;
       const msg = getErrorMessage(e, "Error al cargar municipios");
       setError(msg);
       if (!hadLocal) setMunicipios([]);
     } finally {
       setLoadingMunicipios(false);
-      endSync(syncKey, ok);
     }
-  }, [startSync, endSync]);
+  }, [municipios.length]);
 
   useEffect(() => {
     let cancelled = false;

@@ -37,7 +37,9 @@ export default function ProfileScreen() {
     isAuthenticated: supabaseAuthenticated,
     signOut: supabaseSignOut,
   } = useSupabaseAuth();
-  const { profile, loading, saving, error, saveProfile } = useProfile();
+  const { profile, loading, saving, error, saveProfile } = useProfile({
+    includeLegacyAuth: true,
+  });
   const {
     provincias,
     municipios,
@@ -120,6 +122,8 @@ export default function ProfileScreen() {
     { id: 2, title: "Configuración", icon: "chevron.right" as const },
     { id: 3, title: "Ayuda", icon: "house.fill" as const },
   ];
+
+  void settingsOptions;
 
   const inputStyle = {
     backgroundColor: colors.background,

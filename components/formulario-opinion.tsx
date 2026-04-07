@@ -29,7 +29,7 @@ export function FormularioOpinion({
   onSuccess,
 }: FormularioOpinionProps) {
   const colors = useColors();
-  const { profile, loading: loadingProfile } = useProfile();
+  const { profile } = useProfile();
   const [calificacion, setCalificacion] = useState<number>(0);
   const [comentario, setComentario] = useState("");
   const [loading, setLoading] = useState(false);

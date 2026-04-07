@@ -13,6 +13,10 @@ export type ProfileData = {
   municipality: string;
 };
 
+type UseProfileOptions = {
+  includeLegacyAuth?: boolean;
+};
+
 async function getOrCreateGuestId(): Promise<string> {
   let id = await AsyncStorage.getItem(GUEST_PROFILE_ID_KEY);
   if (!id) {
@@ -22,8 +26,9 @@ async function getOrCreateGuestId(): Promise<string> {
   return id;
 }
 
-export function useProfile() {
-  const { user } = useAuth();
+export function useProfile(options?: UseProfileOptions) {
+  const { includeLegacyAuth = false } = options ?? {};
+  const { user } = useAuth({ autoFetch: includeLegacyAuth });
   const { user: supabaseUser, profile: supabaseProfile } = useSupabaseAuth();
   const [profile, setProfile] = useState<ProfileData>({
     name: "",

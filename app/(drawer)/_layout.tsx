@@ -411,14 +411,6 @@ function CustomDrawerContent(props: any) {
 
 export default function DrawerLayout() {
   const colors = useColors();
-  const { categoryLabel } = useHeaderCategory();
-
-  // Memoizar el headerRight para que solo se refresque cuando cambie la categoría
-  const headerRightComponent = useMemo(
-    () => <HeaderRightWithChip />,
-    [categoryLabel], // Solo refrescar cuando cambie la categoría
-  );
-
   // Aqui se configura el header del drawer
   return (
     <Drawer
@@ -440,7 +432,7 @@ export default function DrawerLayout() {
         headerTitleStyle: {
           fontWeight: "bold",
         },
-        headerRight: () => headerRightComponent,
+        headerRight: HeaderRightWithChip,
       }}
     >
       <IconImage

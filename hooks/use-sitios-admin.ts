@@ -1,4 +1,10 @@
 import { supabase } from "@/lib/supabase";
+import {
+  getCachedSitiosAdmin,
+  getSyncMetadata,
+  replaceCachedSitiosAdmin,
+  setSyncMetadata,
+} from "@/lib/offline-sitios-db";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -50,6 +56,38 @@ export type UpdateSitioRelevante = InsertSitioRelevante & {
   estado_suscripcion?: "creado" | "en_revision" | "aceptado";
 };
 
+const adminCacheByScope = new Map<string, SitioRelevanteAdmin[]>();
+const FULL_SYNC_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const SITIOS_ADMIN_SELECT = [
+  "id",
+  "nombre",
+  "localizacion",
+  "descripcion",
+  "imagenes",
+  "ofertas",
+  "menus",
+  "tipo_sitio_id",
+  "direccion",
+  "telefono",
+  "contador_opiniones",
+  "provincia_id",
+  "municipio_id",
+  "creado_por",
+  "creado_at",
+  "estado_suscripcion",
+  "fecha_cambio_estado",
+  "fecha_aceptado",
+  "horario",
+  "facebook_link",
+  "instagram_link",
+  "sitio_web",
+].join(", ");
+const SITIOS_ADMIN_SELECT_WITH_UPDATED_AT = `${SITIOS_ADMIN_SELECT}, updated_at`;
+
+type SitioAdminRowWithUpdatedAt = SitioRelevanteAdmin & {
+  updated_at: string;
+};
+
 function getErrorMessage(e: unknown, fallback: string): string {
   if (e instanceof Error) return e.message;
   if (
@@ -63,12 +101,46 @@ function getErrorMessage(e: unknown, fallback: string): string {
   return fallback;
 }
 
+function sortSitiosAdmin(list: SitioRelevanteAdmin[]): SitioRelevanteAdmin[] {
+  const next = [...list];
+  next.sort((a, b) => {
+    const createdDiff =
+      new Date(b.creado_at).getTime() - new Date(a.creado_at).getTime();
+    if (createdDiff !== 0) return createdDiff;
+    return b.id - a.id;
+  });
+  return next;
+}
+
+function mergeSitiosAdminById(
+  base: SitioRelevanteAdmin[],
+  incoming: SitioRelevanteAdmin[],
+): SitioRelevanteAdmin[] {
+  const map = new Map<number, SitioRelevanteAdmin>();
+  for (const sitio of base) map.set(sitio.id, sitio);
+  for (const sitio of incoming) map.set(sitio.id, sitio);
+  return Array.from(map.values());
+}
+
+function shouldDoFullSync(lastFullSyncAt: string | null, hasLocalData: boolean) {
+  if (!hasLocalData || !lastFullSyncAt) return true;
+  const parsed = Date.parse(lastFullSyncAt);
+  if (Number.isNaN(parsed)) return true;
+  return Date.now() - parsed >= FULL_SYNC_MAX_AGE_MS;
+}
+
 export function useSitiosAdmin() {
   const { user, isAdmin } = useSupabaseAuth();
   const [sitios, setSitios] = useState<SitioRelevanteAdmin[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
+  const scopeKey = user ? `${isAdmin ? "admin" : "user"}:${user.id}` : null;
+  const syncCursorKey = scopeKey ? `sitios_admin:${scopeKey}:last_sync_at` : null;
+  const fullSyncAtKey = scopeKey
+    ? `sitios_admin:${scopeKey}:last_full_sync_at`
+    : null;
 
   function withTimeout<T>(
     promise: PromiseLike<T>,
@@ -84,49 +156,233 @@ export function useSitiosAdmin() {
     }) as Promise<T>;
   }
 
+  const buildBaseQuery = useCallback(
+    (selectClause: string, includeCreatedOrder = false) => {
+      let query = supabase.from("sitios_relevantes").select(selectClause);
+
+      if (!isAdmin && user) {
+        query = query.eq("creado_por", user.id);
+      }
+
+      if (includeCreatedOrder) {
+        query = query.order("creado_at", { ascending: false });
+      }
+
+      return query;
+    },
+    [isAdmin, user],
+  );
+
+  const fetchLatestUpdatedAt = useCallback(async (): Promise<string | null> => {
+    const query = buildBaseQuery("updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { data, error: err } = await withTimeout(
+      query,
+      12000,
+      "cargar updated_at admin",
+    );
+    if (err) {
+      console.warn(
+        "[useSitiosAdmin] no se pudo obtener updated_at para sync incremental:",
+        err.message,
+      );
+      return null;
+    }
+    const row = (data as unknown as { updated_at?: string } | null) ?? null;
+    return row?.updated_at ?? null;
+  }, [buildBaseQuery]);
+
+  const fetchVisibleIds = useCallback(async (): Promise<Set<number>> => {
+    const query = buildBaseQuery("id");
+    const { data, error: err } = await withTimeout(
+      query,
+      12000,
+      "cargar ids admin",
+    );
+    if (err) throw err;
+    const rows = ((data ?? []) as unknown) as Array<{ id: number }>;
+    return new Set(rows.map((row) => row.id));
+  }, [buildBaseQuery]);
+
+  const fetchChangesSince = useCallback(
+    async (cursor: string) => {
+      const query = buildBaseQuery(SITIOS_ADMIN_SELECT_WITH_UPDATED_AT)
+        .gte("updated_at", cursor)
+        .order("updated_at", { ascending: true });
+      const { data, error: err } = await withTimeout(
+        query,
+        12000,
+        "cargar cambios admin",
+      );
+      if (err) throw err;
+
+      const rows = ((data ?? []) as unknown) as SitioAdminRowWithUpdatedAt[];
+      const sitios = rows.map(({ updated_at: _updatedAt, ...sitio }) => sitio);
+      const latestUpdatedAt =
+        rows.length > 0 ? rows[rows.length - 1]?.updated_at ?? cursor : cursor;
+
+      return {
+        sitios: sitios as SitioRelevanteAdmin[],
+        latestUpdatedAt,
+      };
+    },
+    [buildBaseQuery],
+  );
+
+  const fetchFullSnapshot = useCallback(async () => {
+    const query = buildBaseQuery(SITIOS_ADMIN_SELECT, true);
+    const { data, error: err } = await withTimeout(
+      query,
+      12000,
+      "cargar sitios",
+    );
+    if (err) throw err;
+    return sortSitiosAdmin(((data ?? []) as unknown) as SitioRelevanteAdmin[]);
+  }, [buildBaseQuery]);
+
   const fetchSitios = useCallback(async () => {
     const requestId = ++requestIdRef.current;
     if (!user) {
+      setError(null);
       setSitios([]);
       setLoading(false);
+      setRefreshing(false);
       return;
     }
-    setLoading(true);
+    const currentScopeKey = `${isAdmin ? "admin" : "user"}:${user.id}`;
+    const hasVisibleData =
+      (adminCacheByScope.get(currentScopeKey)?.length ?? 0) > 0;
+    setRefreshing(true);
+    if (!hasVisibleData) {
+      setLoading(true);
+    }
     setError(null);
     try {
       // No debe bloquear la carga de la lista (si cuelga, puede dejar el spinner infinito).
       void supabase.rpc("expirar_suscripciones").then(({ error }) => {
         if (error) console.warn("[useSitiosAdmin] expirar_suscripciones:", error.message);
       });
-      let query = supabase
-        .from("sitios_relevantes")
-        .select(
-          "id, nombre, localizacion, descripcion, imagenes, ofertas, menus, tipo_sitio_id, direccion, telefono, contador_opiniones, provincia_id, municipio_id, creado_por, creado_at, estado_suscripcion, fecha_cambio_estado, fecha_aceptado, horario, facebook_link, instagram_link, sitio_web",
-        )
-        .order("creado_at", { ascending: false });
+      const [lastSyncAt, lastFullSyncAt] = await Promise.all([
+        syncCursorKey ? getSyncMetadata(syncCursorKey) : Promise.resolve(null),
+        fullSyncAtKey ? getSyncMetadata(fullSyncAtKey) : Promise.resolve(null),
+      ]);
 
-      if (!isAdmin) {
-        query = query.eq("creado_por", user.id);
+      const mustRunFullSync = shouldDoFullSync(lastFullSyncAt, hasVisibleData);
+
+      if (hasVisibleData && lastSyncAt && !mustRunFullSync) {
+        try {
+          const incremental = await fetchChangesSince(lastSyncAt);
+          if (requestIdRef.current !== requestId) return;
+
+          const visibleIds = await fetchVisibleIds();
+          if (requestIdRef.current !== requestId) return;
+
+          const nextSnapshot = sortSitiosAdmin(
+            mergeSitiosAdminById(
+              adminCacheByScope.get(currentScopeKey) ?? [],
+              incremental.sitios,
+            ).filter((sitio) => visibleIds.has(sitio.id)),
+          );
+
+          adminCacheByScope.set(currentScopeKey, nextSnapshot);
+          setSitios(nextSnapshot);
+          void replaceCachedSitiosAdmin(currentScopeKey, nextSnapshot);
+
+          if (syncCursorKey && incremental.latestUpdatedAt) {
+            void setSyncMetadata(syncCursorKey, incremental.latestUpdatedAt);
+          }
+
+          return;
+        } catch (e) {
+          console.warn(
+            "[useSitiosAdmin] fallback a sync completa:",
+            getErrorMessage(e, "sync incremental no disponible"),
+          );
+        }
       }
-      const { data, error: err } = await withTimeout(query, 12000, "cargar sitios");
+
+      const snapshot = await fetchFullSnapshot();
       if (requestIdRef.current !== requestId) return;
-      if (err) throw err;
-      setSitios((data ?? []) as SitioRelevanteAdmin[]);
+
+      adminCacheByScope.set(currentScopeKey, snapshot);
+      setSitios(snapshot);
+      void replaceCachedSitiosAdmin(currentScopeKey, snapshot);
+
+      const latestUpdatedAt = await fetchLatestUpdatedAt();
+      if (requestIdRef.current !== requestId) return;
+      if (syncCursorKey && latestUpdatedAt) {
+        void setSyncMetadata(syncCursorKey, latestUpdatedAt);
+      }
+      if (fullSyncAtKey) {
+        void setSyncMetadata(fullSyncAtKey, new Date().toISOString());
+      }
     } catch (e) {
       if (requestIdRef.current !== requestId) return;
       const msg = getErrorMessage(e, "Error al cargar sitios");
       setError(msg);
-      setSitios([]);
+      if (!hasVisibleData) {
+        setSitios([]);
+      }
     } finally {
       if (requestIdRef.current === requestId) {
         setLoading(false);
+        setRefreshing(false);
       }
     }
-  }, [user, isAdmin]);
+  }, [
+    buildBaseQuery,
+    fetchChangesSince,
+    fetchFullSnapshot,
+    fetchLatestUpdatedAt,
+    fetchVisibleIds,
+    fullSyncAtKey,
+    isAdmin,
+    syncCursorKey,
+    user,
+  ]);
 
   useEffect(() => {
-    fetchSitios();
-  }, [fetchSitios]);
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      if (!scopeKey) {
+        setSitios([]);
+        setLoading(false);
+        setError(null);
+        return;
+      }
+
+      const memory = adminCacheByScope.get(scopeKey);
+      if (memory && memory.length > 0) {
+        setSitios(memory);
+        setLoading(false);
+      } else {
+        setLoading(true);
+        try {
+          const local = await getCachedSitiosAdmin(scopeKey);
+          if (!cancelled && local.length > 0) {
+            adminCacheByScope.set(scopeKey, local);
+            setSitios(local);
+            setLoading(false);
+          }
+        } catch (e) {
+          console.warn("[useSitiosAdmin] error al leer cache SQLite:", e);
+        }
+      }
+
+      if (!cancelled) {
+        void fetchSitios();
+      }
+    };
+
+    void bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchSitios, scopeKey]);
 
   const crearSitio = useCallback(
     async (input: InsertSitioRelevante) => {
@@ -223,5 +479,14 @@ export function useSitiosAdmin() {
     [isAdmin, fetchSitios],
   );
 
-  return { sitios, loading, error, refresh: fetchSitios, crearSitio, cambiarEstado, actualizarSitio };
+  return {
+    sitios,
+    loading,
+    refreshing,
+    error,
+    refresh: fetchSitios,
+    crearSitio,
+    cambiarEstado,
+    actualizarSitio,
+  };
 }

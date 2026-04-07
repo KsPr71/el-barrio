@@ -2,7 +2,7 @@ import { useColors } from "@/hooks/use-colors";
 import { supabase } from "@/lib/supabase";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -47,12 +47,16 @@ export function ImageUploadSitio({
   const colors = useColors();
   const [uploading, setUploading] = useState(false);
 
-  const urls = value
-    ? value
-        .split(",")
-        .map((s) => s.trim())
-        .filter((u) => u.startsWith("http"))
-    : [];
+  const urls = useMemo(
+    () =>
+      value
+        ? value
+            .split(",")
+            .map((s) => s.trim())
+            .filter((u) => u.startsWith("http"))
+        : [],
+    [value],
+  );
 
   const pickAndUpload = useCallback(async () => {
     if (!nombreSitio.trim()) {

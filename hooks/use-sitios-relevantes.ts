@@ -2,7 +2,9 @@ import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getCachedSitiosRelevantes,
+  getSyncMetadata,
   replaceCachedSitiosRelevantes,
+  setSyncMetadata,
 } from "@/lib/offline-sitios-db";
 import { useSyncStatus } from "@/contexts/sync-status-context";
 
@@ -39,6 +41,14 @@ type RawSitio = Omit<
   provincia?: { short_name: string | null } | null;
 };
 
+type RawSitioWithUpdatedAt = RawSitio & {
+  updated_at: string;
+};
+
+const SYNC_CURSOR_KEY = "sitios_relevantes:last_sync_at";
+const FULL_SYNC_AT_KEY = "sitios_relevantes:last_full_sync_at";
+const FULL_SYNC_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
 function sortSitios(list: SitioRelevante[]): SitioRelevante[] {
   const next = [...list];
   next.sort((a, b) => {
@@ -73,6 +83,13 @@ function getErrorMessage(e: unknown, fallback: string): string {
     return (e as { message: string }).message;
   }
   return fallback;
+}
+
+function shouldDoFullSync(lastFullSyncAt: string | null, hasLocalData: boolean) {
+  if (!hasLocalData || !lastFullSyncAt) return true;
+  const parsed = Date.parse(lastFullSyncAt);
+  if (Number.isNaN(parsed)) return true;
+  return Date.now() - parsed >= FULL_SYNC_MAX_AGE_MS;
 }
 
 export function useSitiosRelevantes() {
@@ -171,6 +188,109 @@ export function useSitiosRelevantes() {
     })) as SitioRelevante[];
   }, [fetchPromedios]);
 
+  const fetchLatestUpdatedAt = useCallback(async (): Promise<string | null> => {
+    const { data, error: err } = await supabase
+      .from("sitios_relevantes")
+      .select("updated_at")
+      .eq("estado_suscripcion", "aceptado")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (err) {
+      console.warn(
+        "[useSitiosRelevantes] no se pudo obtener updated_at para sync incremental:",
+        err.message,
+      );
+      return null;
+    }
+
+    return data?.updated_at ?? null;
+  }, []);
+
+  const fetchChangesSince = useCallback(
+    async (cursor: string) => {
+      const { data, error: err } = await supabase
+        .from("sitios_relevantes")
+        .select(
+          [
+            "id",
+            "nombre",
+            "localizacion",
+            "descripcion",
+            "imagenes",
+            "ofertas",
+            "menus",
+            "tipo_sitio_id",
+            "direccion",
+            "telefono",
+            "contador_opiniones",
+            "provincia_id",
+            "municipio_id",
+            "horario",
+            "facebook_link",
+            "instagram_link",
+            "sitio_web",
+            "updated_at",
+            "provincia:provincia_id (short_name)",
+          ].join(", "),
+        )
+        .eq("estado_suscripcion", "aceptado")
+        .gte("updated_at", cursor)
+        .order("updated_at", { ascending: true });
+
+      if (err) {
+        throw err;
+      }
+
+      const rows = ((data ?? []) as unknown) as RawSitioWithUpdatedAt[];
+      const sitioIds = rows.map((row) => row.id);
+      const promedios = await fetchPromedios(sitioIds);
+
+      const sitios = rows.map((sitio) => ({
+        id: sitio.id,
+        nombre: sitio.nombre,
+        localizacion: sitio.localizacion,
+        descripcion: sitio.descripcion,
+        imagenes: sitio.imagenes,
+        ofertas: sitio.ofertas,
+        menus: sitio.menus,
+        tipo_sitio_id: sitio.tipo_sitio_id,
+        direccion: sitio.direccion,
+        telefono: sitio.telefono,
+        contador_opiniones: sitio.contador_opiniones,
+        provincia_id: sitio.provincia_id,
+        provincia_short_name: sitio.provincia?.short_name ?? null,
+        municipio_id: sitio.municipio_id,
+        promedio_puntuacion: promedios.get(sitio.id) ?? 0,
+        horario: sitio.horario,
+        facebook_link: sitio.facebook_link,
+        instagram_link: sitio.instagram_link,
+        sitio_web: sitio.sitio_web,
+      })) satisfies SitioRelevante[];
+
+      const latestUpdatedAt =
+        rows.length > 0 ? rows[rows.length - 1]?.updated_at ?? cursor : cursor;
+
+      return { sitios, latestUpdatedAt };
+    },
+    [fetchPromedios],
+  );
+
+  const fetchAcceptedIds = useCallback(async (): Promise<Set<number>> => {
+    const { data, error: err } = await supabase
+      .from("sitios_relevantes")
+      .select("id")
+      .eq("estado_suscripcion", "aceptado")
+      .order("id", { ascending: true });
+
+    if (err) {
+      throw err;
+    }
+
+    return new Set((data ?? []).map((row) => row.id));
+  }, []);
+
   const fetchSitios = useCallback(async () => {
     const requestId = ++requestIdRef.current;
     const syncKey = `sitios_${requestId}`;
@@ -189,6 +309,67 @@ export function useSitiosRelevantes() {
       }
       setLoadingMore(false);
       setError(null);
+
+      const [lastSyncAt, lastFullSyncAt] = await Promise.all([
+        getSyncMetadata(SYNC_CURSOR_KEY),
+        getSyncMetadata(FULL_SYNC_AT_KEY),
+      ]);
+
+      const mustRunFullSync = shouldDoFullSync(lastFullSyncAt, hadVisibleData);
+
+      if (hadVisibleData && lastSyncAt && !mustRunFullSync) {
+        let incremental:
+          | { sitios: SitioRelevante[]; latestUpdatedAt: string }
+          | null = null;
+        try {
+          incremental = await fetchChangesSince(lastSyncAt);
+        } catch (e) {
+          console.warn(
+            "[useSitiosRelevantes] fallback a sync completa:",
+            getErrorMessage(e, "sync incremental no disponible"),
+          );
+        }
+
+        if (incremental) {
+          if (requestIdRef.current !== requestId) {
+            finish(false);
+            return;
+          }
+
+          const acceptedIds = await fetchAcceptedIds();
+          if (requestIdRef.current !== requestId) {
+            finish(false);
+            return;
+          }
+
+          const nextSnapshot = sortSitios(
+            mergeById(cachedSitiosRelevantes ?? [], incremental.sitios).filter(
+              (sitio) => acceptedIds.has(sitio.id),
+            ),
+          );
+          const snapshotChanged =
+            nextSnapshot.length !== (cachedSitiosRelevantes?.length ?? 0) ||
+            incremental.sitios.length > 0;
+
+          if (snapshotChanged) {
+            cachedSitiosRelevantes = nextSnapshot;
+            setSitios(nextSnapshot);
+            void replaceCachedSitiosRelevantes(nextSnapshot).catch((e) => {
+              console.warn(
+                "[useSitiosRelevantes] error al reconciliar cache SQLite:",
+                e,
+              );
+            });
+          }
+
+          if (incremental.latestUpdatedAt) {
+            void setSyncMetadata(SYNC_CURSOR_KEY, incremental.latestUpdatedAt);
+          }
+
+          finish(true);
+          return;
+        }
+      }
 
       const first = await fetchPage(0, PAGE_SIZE - 1);
       if (requestIdRef.current !== requestId) {
@@ -218,6 +399,11 @@ export function useSitiosRelevantes() {
       finish(true);
 
       if (firstPageIsComplete) {
+        const latestUpdatedAt = await fetchLatestUpdatedAt();
+        if (latestUpdatedAt) {
+          void setSyncMetadata(SYNC_CURSOR_KEY, latestUpdatedAt);
+        }
+        void setSyncMetadata(FULL_SYNC_AT_KEY, new Date().toISOString());
         return;
       }
 
@@ -250,6 +436,12 @@ export function useSitiosRelevantes() {
           );
         });
       }
+
+      const latestUpdatedAt = await fetchLatestUpdatedAt();
+      if (latestUpdatedAt) {
+        void setSyncMetadata(SYNC_CURSOR_KEY, latestUpdatedAt);
+      }
+      void setSyncMetadata(FULL_SYNC_AT_KEY, new Date().toISOString());
     } catch (e) {
       const msg = getErrorMessage(e, "Error al cargar sitios relevantes");
       setError(msg);
@@ -260,7 +452,14 @@ export function useSitiosRelevantes() {
         setLoadingMore(false);
       }
     }
-  }, [fetchPage, startSync, endSync]);
+  }, [
+    endSync,
+    fetchAcceptedIds,
+    fetchChangesSince,
+    fetchLatestUpdatedAt,
+    fetchPage,
+    startSync,
+  ]);
 
   useEffect(() => {
     let cancelled = false;

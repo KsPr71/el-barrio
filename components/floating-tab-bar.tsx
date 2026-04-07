@@ -37,7 +37,6 @@ function useBlurView(): React.ComponentType<{
 const TAB_BAR_MARGIN_H = 48;
 const ICON_SIZE = 24;
 const BLUR_INTENSITY = 100;
-const PILL_ALPHA = "99";
 const ROW_PADDING_H = 5;
 
 export function FloatingTabBar(props: BottomTabBarProps) {

@@ -49,7 +49,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: "por-el-barrio",
-  version: "1.6.4",
+  version: "1.7.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,

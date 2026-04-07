@@ -154,6 +154,7 @@ export default function AdministracionScreen() {
   const {
     sitios,
     loading: sitiosLoading,
+    refreshing: sitiosRefreshing,
     error: sitiosError,
     crearSitio,
     actualizarSitio,
@@ -372,7 +373,7 @@ export default function AdministracionScreen() {
             </View>
             <TouchableOpacity
               onPress={refreshSitios}
-              disabled={sitiosLoading}
+              disabled={sitiosLoading || sitiosRefreshing}
               style={[
                 {
                   padding: 10,
@@ -385,10 +386,10 @@ export default function AdministracionScreen() {
                   minWidth: 44,
                   minHeight: 44,
                 },
-                sitiosLoading && { opacity: 0.6 },
+                (sitiosLoading || sitiosRefreshing) && { opacity: 0.6 },
               ]}
             >
-              {sitiosLoading ? (
+              {sitiosLoading || sitiosRefreshing ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <IconSymbol
