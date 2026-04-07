@@ -6,6 +6,7 @@ import { useLocations } from "@/hooks/use-locations";
 import { useProfile } from "@/hooks/use-profile";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
 import { useSitiosRelevantes } from "@/hooks/use-sitios-relevantes";
+import { useTiposSitio } from "@/hooks/use-tipos-sitio";
 import { matchTermsInText, queryToSearchTerms } from "@/lib/search-ofertas";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -31,6 +32,7 @@ export default function AquiHayScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { sitios, loading, error } = useSitiosRelevantes();
+  const { tipos } = useTiposSitio();
   const { provincias } = useLocations();
   const { profile } = useProfile();
   const [query, setQuery] = useState("");
@@ -62,6 +64,10 @@ export default function AquiHayScreen() {
       provincias.find((p) => p.id === effectiveProvinciaId)?.nombre ?? null
     );
   }, [effectiveProvinciaId, provincias]);
+  const tiposById = useMemo(
+    () => new Map(tipos.map((tipo) => [tipo.id, tipo])),
+    [tipos],
+  );
 
   // Filtrar sitios por provincia efectiva antes de buscar ofertas
   const sitiosPorProvincia = useMemo(() => {
@@ -245,6 +251,11 @@ export default function AquiHayScreen() {
               <SitioRelevanteCard
                 key={sitio.id}
                 sitio={sitio}
+                tipo={
+                  sitio.tipo_sitio_id != null
+                    ? (tiposById.get(sitio.tipo_sitio_id) ?? null)
+                    : null
+                }
                 matchedWords={matchedWords}
                 onPress={() => handlePressCard(sitio.id)}
               />

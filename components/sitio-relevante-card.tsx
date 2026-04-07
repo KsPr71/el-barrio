@@ -2,9 +2,8 @@ import { EstrellasPuntuacion } from "@/components/estrellas-puntuacion";
 import { TipoSitioChip } from "@/components/ui/tipo-sitio";
 import { useOpinionStats } from "@/contexts/opinion-stats-context";
 import { useColors } from "@/hooks/use-colors";
-import { useOpiniones } from "@/hooks/use-opiniones";
 import type { SitioRelevante } from "@/hooks/use-sitios-relevantes";
-import { useTiposSitio } from "@/hooks/use-tipos-sitio";
+import type { TipoSitio } from "@/hooks/use-tipos-sitio";
 import { isHorarioAbierto } from "@/lib/horario";
 import { Image } from "expo-image";
 import { useEffect, useState } from "react";
@@ -14,6 +13,7 @@ import { IconSymbol } from "./ui/icon-symbol";
 export interface SitioRelevanteCardProps {
   sitio: SitioRelevante;
   onPress?: () => void;
+  tipo?: TipoSitio | null;
   /** Palabras encontradas en ofertas (ej. búsqueda "Aquí hay") */
   matchedWords?: string[];
 }
@@ -30,17 +30,19 @@ function getFirstImageUrl(imagenes: string | null): string | null {
 export function SitioRelevanteCard({
   sitio,
   onPress,
+  tipo = null,
   matchedWords,
 }: SitioRelevanteCardProps) {
   const colors = useColors();
-  const { tipos } = useTiposSitio();
   const imagenUrl = getFirstImageUrl(sitio.imagenes);
-  const { stats } = useOpiniones(sitio.id);
   const { lastUpdate } = useOpinionStats();
   const displayStats =
     lastUpdate?.sitioId === sitio.id
       ? { promedio: lastUpdate.promedio, total: lastUpdate.total }
-      : stats;
+      : {
+          promedio: sitio.promedio_puntuacion,
+          total: sitio.contador_opiniones,
+        };
   const [abierto, setAbierto] = useState<boolean | null>(() =>
     isHorarioAbierto(sitio.horario),
   );
@@ -62,10 +64,7 @@ export function SitioRelevanteCard({
     };
   }, [sitio.horario]);
 
-  const tipoSitio =
-    sitio.tipo_sitio_id != null
-      ? tipos.find((t) => t.id === sitio.tipo_sitio_id)
-      : null;
+  const tipoSitio = tipo;
 
   const content = (
     <View

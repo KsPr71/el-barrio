@@ -10,7 +10,7 @@ import { useSitiosRelevantes } from "@/hooks/use-sitios-relevantes";
 import { useTiposSitio, type TipoSitio } from "@/hooks/use-tipos-sitio";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   LayoutChangeEvent,
@@ -51,6 +51,7 @@ export default function HomeScreen() {
   >(undefined);
   const [showProvinciaModal, setShowProvinciaModal] = useState(false);
   const { setHeaderChip, setHeaderCategoryLabel } = useHeaderCategory();
+  const hasFocusedOnceRef = useRef(false);
 
   const showChipInHeader = useCallback(() => {
     setHeaderChip(true);
@@ -130,6 +131,10 @@ export default function HomeScreen() {
   // Refrescar el perfil y los sitios cuando la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
       refreshProfile();
       refresh(); // Refrescar sitios para actualizar las estrellas después de crear una opinión
     }, [refreshProfile, refresh]),
@@ -173,6 +178,10 @@ export default function HomeScreen() {
   }, [sitiosPorProvincia]);
 
   const totalSitios = sitiosPorProvincia.length;
+  const tiposById = useMemo(
+    () => new Map(tipos.map((tipo) => [tipo.id, tipo])),
+    [tipos],
+  );
 
   // Categorías para el carrusel: si ya tenemos tipos con nombres, usarlos;
   // si no (tipos aún cargando), derivar desde los sitios para pintar el carrusel al instante.
@@ -372,6 +381,11 @@ export default function HomeScreen() {
                 <SitioRelevanteCard
                   key={sitio.id}
                   sitio={sitio}
+                  tipo={
+                    sitio.tipo_sitio_id != null
+                      ? (tiposById.get(sitio.tipo_sitio_id) ?? null)
+                      : null
+                  }
                   onPress={() =>
                     router.push({
                       pathname: "/(drawer)/(tabs)/detalles",
@@ -415,6 +429,7 @@ export default function HomeScreen() {
                         <SitioRelevanteCard
                           key={sitio.id}
                           sitio={sitio}
+                          tipo={tipo}
                           onPress={() =>
                             router.push({
                               pathname: "/(drawer)/(tabs)/detalles",

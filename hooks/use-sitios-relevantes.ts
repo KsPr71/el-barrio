@@ -32,6 +32,13 @@ export type SitioRelevante = {
   sitio_web: string | null;
 };
 
+type RawSitio = Omit<
+  SitioRelevante,
+  "promedio_puntuacion" | "provincia_short_name"
+> & {
+  provincia?: { short_name: string | null } | null;
+};
+
 function sortSitios(list: SitioRelevante[]): SitioRelevante[] {
   const next = [...list];
   next.sort((a, b) => {
@@ -70,9 +77,13 @@ function getErrorMessage(e: unknown, fallback: string): string {
 
 export function useSitiosRelevantes() {
   const { startSync, endSync } = useSyncStatus();
-  const [sitios, setSitios] = useState<SitioRelevante[]>(() => cachedSitiosRelevantes ?? []);
+  const [sitios, setSitios] = useState<SitioRelevante[]>(
+    () => cachedSitiosRelevantes ?? [],
+  );
   // loading: mientras no hay cache persistente ni en memoria, mostramos loader.
-  const [loading, setLoading] = useState(() => cachedSitiosRelevantes === null);
+  const [loading, setLoading] = useState(
+    () => cachedSitiosRelevantes === null,
+  );
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
@@ -146,14 +157,7 @@ export function useSitiosRelevantes() {
       throw err;
     }
 
-    type RawSitio = Omit<
-      SitioRelevante,
-      "promedio_puntuacion" | "provincia_short_name"
-    > & {
-      provincia?: { short_name: string | null } | null;
-    };
-
-    const sitios = (data ?? []) as RawSitio[];
+    const sitios = ((data ?? []) as unknown) as RawSitio[];
 
     // Obtener promedios para estos sitios
     const sitioIds = sitios.map((s) => s.id);
@@ -170,6 +174,7 @@ export function useSitiosRelevantes() {
   const fetchSitios = useCallback(async () => {
     const requestId = ++requestIdRef.current;
     const syncKey = `sitios_${requestId}`;
+    const hadVisibleData = (cachedSitiosRelevantes?.length ?? 0) > 0;
     startSync(syncKey);
     let finished = false;
     const finish = (ok: boolean) => {
@@ -179,32 +184,52 @@ export function useSitiosRelevantes() {
     };
 
     try {
-      setLoading(true);
+      if (!hadVisibleData) {
+        setLoading(true);
+      }
       setLoadingMore(false);
       setError(null);
 
-      // 1) Cargar todas las páginas desde Supabase y construir un snapshot completo.
-      const allPages: SitioRelevante[] = [];
-
-      // Primera página
       const first = await fetchPage(0, PAGE_SIZE - 1);
       if (requestIdRef.current !== requestId) {
         finish(false);
         return;
       }
-      allPages.push(...first);
 
-      // Resto de páginas
+      const firstPageIsComplete = first.length < PAGE_SIZE;
+      const firstSnapshot = sortSitios(
+        hadVisibleData && !firstPageIsComplete
+          ? mergeById(cachedSitiosRelevantes ?? [], first)
+          : first,
+      );
+      cachedSitiosRelevantes = firstSnapshot;
+      setSitios(firstSnapshot);
+      setLoading(false);
+
+      if (firstSnapshot.length > 0) {
+        void replaceCachedSitiosRelevantes(firstSnapshot).catch((e) => {
+          console.warn(
+            "[useSitiosRelevantes] error al guardar cache SQLite:",
+            e,
+          );
+        });
+      }
+
+      finish(true);
+
+      if (firstPageIsComplete) {
+        return;
+      }
+
+      const allPages: SitioRelevante[] = [...first];
       setLoadingMore(true);
       let offset = PAGE_SIZE;
       for (;;) {
         if (requestIdRef.current !== requestId) {
-          finish(false);
           return;
         }
         const page = await fetchPage(offset, offset + PAGE_SIZE - 1);
         if (requestIdRef.current !== requestId) {
-          finish(false);
           return;
         }
         if (page.length === 0) break;
@@ -213,23 +238,21 @@ export function useSitiosRelevantes() {
         offset += PAGE_SIZE;
       }
 
-      // 2) Ordenar y reemplazar lista completa por la fuente de verdad del servidor.
-      const serverAll = sortSitios(allPages);
-      cachedSitiosRelevantes = serverAll;
-      setSitios(serverAll);
+      const fullSnapshot = sortSitios(allPages);
+      cachedSitiosRelevantes = fullSnapshot;
+      setSitios(fullSnapshot);
 
-      // 3) Actualizar cache SQLite en segundo plano.
-      if (serverAll.length > 0) {
-        void replaceCachedSitiosRelevantes(serverAll).catch((e) => {
-          console.warn("[useSitiosRelevantes] error al guardar cache SQLite:", e);
+      if (fullSnapshot.length > 0) {
+        void replaceCachedSitiosRelevantes(fullSnapshot).catch((e) => {
+          console.warn(
+            "[useSitiosRelevantes] error al guardar cache SQLite:",
+            e,
+          );
         });
       }
-
-      finish(true);
     } catch (e) {
       const msg = getErrorMessage(e, "Error al cargar sitios relevantes");
       setError(msg);
-      // En caso de error, mantenemos lo que ya había en memoria / SQLite.
       finish(false);
     } finally {
       if (requestIdRef.current === requestId) {
