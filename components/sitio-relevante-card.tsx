@@ -192,10 +192,10 @@ export function SitioRelevanteCard({
                     paddingVertical: 4,
                     borderRadius: 12,
                     backgroundColor:
-                      abierto === true ? "#16A34A" : colors.secondary,
+                      abierto === true ? colors.secondary : colors.surface,
                     borderWidth: 1,
                     borderColor:
-                      abierto === true ? "#15803D" : colors.secondary,
+                      abierto === true ? colors.secondary : colors.primary + "60",
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 4,
@@ -204,11 +204,11 @@ export function SitioRelevanteCard({
                   <IconSymbol
                     name={abierto === true ? "checkmark.circle.fill" : "clock.fill"}
                     size={12}
-                    color={abierto === true ? "#FFFFFF" : "#7C2D12"}
+                    color={abierto === true ? "#7C2D12" : colors.primary}
                   />
                   <Text
                     className="text-[10px] font-semibold"
-                    style={{ color: abierto === true ? "#FFFFFF" : "#7C2D12" }}
+                    style={{ color: abierto === true ? "#7C2D12" : colors.primary }}
                   >
                     {abierto === true ? "Abierto" : "Cerrado"}
                   </Text>
