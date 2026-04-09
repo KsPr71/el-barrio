@@ -8,6 +8,9 @@ export interface EstrellasPuntuacionProps {
   size?: number;
   showNumber?: boolean;
   showTotal?: boolean;
+  numberColor?: string;
+  totalColor?: string;
+  emptyStarColor?: string;
   editable?: boolean;
   calificacionSeleccionada?: number;
   onCalificacionChange?: (calificacion: number) => void;
@@ -19,6 +22,9 @@ export function EstrellasPuntuacion({
   size = 16,
   showNumber = false,
   showTotal = false,
+  numberColor,
+  totalColor,
+  emptyStarColor,
   editable = false,
   calificacionSeleccionada,
   onCalificacionChange,
@@ -62,7 +68,9 @@ export function EstrellasPuntuacion({
         <IconSymbol
           name={estaSeleccionada ? "star.fill" : estaParcial ? "star.lefthalf.fill" : "star"}
           size={size}
-          color={estaSeleccionada || estaParcial ? "#FFD700" : colors.muted}
+          color={
+            estaSeleccionada || estaParcial ? "#FFD700" : (emptyStarColor ?? colors.muted)
+          }
         />
       </TouchableOpacity>
     );
@@ -77,7 +85,7 @@ export function EstrellasPuntuacion({
         <Text
           style={{
             fontSize: size * 0.75,
-            color: colors.foreground,
+            color: numberColor ?? colors.foreground,
             fontWeight: "600",
             marginLeft: 4,
           }}
@@ -89,7 +97,7 @@ export function EstrellasPuntuacion({
         <Text
           style={{
             fontSize: size * 0.7,
-            color: colors.muted,
+            color: totalColor ?? colors.muted,
             marginLeft: 4,
           }}
         >
