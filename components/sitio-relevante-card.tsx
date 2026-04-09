@@ -126,31 +126,37 @@ export function SitioRelevanteCard({
             </View>
           )}
           {tipoSitio && <TipoSitioChip tipo={tipoSitio} overlay />}
-          <View
-            style={{
-              position: "absolute",
-              top: 10,
-              right: 10,
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              borderRadius: 20,
-              backgroundColor: "rgba(17, 24, 28, 0.72)",
-              borderWidth: 1,
-              borderColor: "rgba(255,255,255,0.16)",
-              maxWidth: "72%",
-            }}
-          >
-            <EstrellasPuntuacion
-              promedio={displayStats.promedio}
-              total={displayStats.total}
-              size={12}
-              showNumber
-              showTotal={displayStats.total > 0}
-              numberColor="#FFFFFF"
-              totalColor="rgba(255,255,255,0.8)"
-              emptyStarColor="rgba(255,255,255,0.42)"
-            />
-          </View>
+          {(abierto === true || abierto === false) && (
+            <View
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 20,
+                backgroundColor: abierto === true ? "#16A34A" : "#DC2626",
+                borderWidth: 1,
+                borderColor: abierto === true ? "#15803D" : "#B91C1C",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                maxWidth: "72%",
+              }}
+            >
+              <IconSymbol
+                name={abierto === true ? "checkmark.circle.fill" : "clock.fill"}
+                size={12}
+                color="#FFFFFF"
+              />
+              <Text
+                className="text-[10px] font-semibold"
+                style={{ color: "#FFFFFF" }}
+              >
+                {abierto === true ? "Abierto" : "Cerrado"}
+              </Text>
+            </View>
+          )}
         </View>
         <View
           style={{
@@ -185,35 +191,28 @@ export function SitioRelevanteCard({
               >
                 {sitio.nombre}
               </Text>
-              {(abierto === true || abierto === false) && (
-                <View
-                  style={{
-                    paddingHorizontal: 8,
-                    paddingVertical: 4,
-                    borderRadius: 12,
-                    backgroundColor:
-                      abierto === true ? colors.secondary : colors.surface,
-                    borderWidth: 1,
-                    borderColor:
-                      abierto === true ? colors.secondary : colors.primary + "60",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                  }}
-                >
-                  <IconSymbol
-                    name={abierto === true ? "checkmark.circle.fill" : "clock.fill"}
-                    size={12}
-                    color={abierto === true ? "#7C2D12" : colors.primary}
-                  />
-                  <Text
-                    className="text-[10px] font-semibold"
-                    style={{ color: abierto === true ? "#7C2D12" : colors.primary }}
-                  >
-                    {abierto === true ? "Abierto" : "Cerrado"}
-                  </Text>
-                </View>
-              )}
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                  backgroundColor: "rgba(255,255,255,0.12)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.16)",
+                  maxWidth: "72%",
+                }}
+              >
+                <EstrellasPuntuacion
+                  promedio={displayStats.promedio}
+                  total={displayStats.total}
+                  size={12}
+                  showNumber
+                  showTotal={displayStats.total > 0}
+                  numberColor="#FFFFFF"
+                  totalColor="rgba(255,255,255,0.8)"
+                  emptyStarColor="rgba(255,255,255,0.42)"
+                />
+              </View>
             </View>
           </View>
 
