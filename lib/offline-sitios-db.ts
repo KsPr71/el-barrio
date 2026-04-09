@@ -126,6 +126,8 @@ async function ensureTables() {
       provincia_id TEXT,
       municipio_id TEXT,
       creado_por TEXT,
+      creador_nombre TEXT,
+      creador_email TEXT,
       creado_at TEXT NOT NULL,
       estado_suscripcion TEXT NOT NULL,
       fecha_cambio_estado TEXT,
@@ -146,6 +148,24 @@ async function ensureTables() {
     await db.execAsync(`
       ALTER TABLE sitios_relevantes_cache
       ADD COLUMN provincia_short_name TEXT;
+    `);
+  } catch {
+    // Ignorar error si la columna ya existe.
+  }
+
+  try {
+    await db.execAsync(`
+      ALTER TABLE sitios_admin_cache
+      ADD COLUMN creador_nombre TEXT;
+    `);
+  } catch {
+    // Ignorar error si la columna ya existe.
+  }
+
+  try {
+    await db.execAsync(`
+      ALTER TABLE sitios_admin_cache
+      ADD COLUMN creador_email TEXT;
     `);
   } catch {
     // Ignorar error si la columna ya existe.
@@ -303,6 +323,8 @@ export async function getCachedSitiosAdmin(
     provincia_id: string | null;
     municipio_id: string | null;
     creado_por: string | null;
+    creador_nombre: string | null;
+    creador_email: string | null;
     creado_at: string;
     estado_suscripcion: "creado" | "en_revision" | "aceptado";
     fecha_cambio_estado: string | null;
@@ -328,6 +350,8 @@ export async function getCachedSitiosAdmin(
         provincia_id,
         municipio_id,
         creado_por,
+        creador_nombre,
+        creador_email,
         creado_at,
         estado_suscripcion,
         fecha_cambio_estado,
@@ -358,6 +382,8 @@ export async function getCachedSitiosAdmin(
     provincia_id: row.provincia_id,
     municipio_id: row.municipio_id,
     creado_por: row.creado_por,
+    creador_nombre: row.creador_nombre,
+    creador_email: row.creador_email,
     creado_at: row.creado_at,
     estado_suscripcion: row.estado_suscripcion,
     fecha_cambio_estado: row.fecha_cambio_estado,
@@ -417,6 +443,8 @@ export async function replaceCachedSitiosAdmin(
               provincia_id,
               municipio_id,
               creado_por,
+              creador_nombre,
+              creador_email,
               creado_at,
               estado_suscripcion,
               fecha_cambio_estado,
@@ -425,7 +453,7 @@ export async function replaceCachedSitiosAdmin(
               facebook_link,
               instagram_link,
               sitio_web
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
           [
             scopeKey,
@@ -443,6 +471,8 @@ export async function replaceCachedSitiosAdmin(
             sitio.provincia_id,
             sitio.municipio_id,
             sitio.creado_por,
+            sitio.creador_nombre,
+            sitio.creador_email,
             sitio.creado_at,
             sitio.estado_suscripcion,
             sitio.fecha_cambio_estado,

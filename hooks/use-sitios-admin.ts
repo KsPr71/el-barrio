@@ -30,6 +30,8 @@ export type SitioRelevanteAdmin = {
   facebook_link: string | null;
   instagram_link: string | null;
   sitio_web: string | null;
+  creador_nombre: string | null;
+  creador_email: string | null;
 };
 
 export type InsertSitioRelevante = {
@@ -92,6 +94,12 @@ type SitioAdminRowWithUpdatedAt = SitioRelevanteAdmin & {
   updated_at: string;
 };
 
+type AdminProfileRow = {
+  id: string;
+  name: string | null;
+  email: string | null;
+};
+
 function getErrorMessage(e: unknown, fallback: string): string {
   if (e instanceof Error) return e.message;
   if (
@@ -124,6 +132,21 @@ function mergeSitiosAdminById(
   for (const sitio of base) map.set(sitio.id, sitio);
   for (const sitio of incoming) map.set(sitio.id, sitio);
   return Array.from(map.values());
+}
+
+function enrichSitiosWithCreators(
+  sitios: SitioRelevanteAdmin[],
+  profiles: Map<string, AdminProfileRow>,
+): SitioRelevanteAdmin[] {
+  return sitios.map((sitio) => {
+    const creadorId = sitio.creado_por ?? "";
+    const profile = profiles.get(creadorId);
+    return {
+      ...sitio,
+      creador_nombre: profile?.name ?? sitio.creador_nombre ?? null,
+      creador_email: profile?.email ?? sitio.creador_email ?? null,
+    };
+  });
 }
 
 function shouldDoFullSync(lastFullSyncAt: string | null, hasLocalData: boolean) {
@@ -211,6 +234,41 @@ export function useSitiosAdmin(options?: UseSitiosAdminOptions) {
     return new Set(rows.map((row) => row.id));
   }, [buildBaseQuery]);
 
+  const fetchCreatorProfiles = useCallback(
+    async (sitios: SitioRelevanteAdmin[]): Promise<Map<string, AdminProfileRow>> => {
+      const creatorIds = Array.from(
+        new Set(
+          sitios
+            .map((sitio) => sitio.creado_por)
+            .filter((value): value is string => Boolean(value)),
+        ),
+      );
+
+      if (creatorIds.length === 0) return new Map<string, AdminProfileRow>();
+
+      const { data, error: err } = await withTimeout(
+        supabase
+          .from("admin_profiles")
+          .select("id, name, email")
+          .in("id", creatorIds),
+        12000,
+        "cargar perfiles creadores",
+      );
+
+      if (err) {
+        console.warn(
+          "[useSitiosAdmin] no se pudieron cargar perfiles de creadores:",
+          err.message,
+        );
+        return new Map<string, AdminProfileRow>();
+      }
+
+      const rows = ((data ?? []) as unknown) as AdminProfileRow[];
+      return new Map(rows.map((row) => [row.id, row]));
+    },
+    [],
+  );
+
   const fetchChangesSince = useCallback(
     async (cursor: string) => {
       const query = buildBaseQuery(SITIOS_ADMIN_SELECT_WITH_UPDATED_AT)
@@ -225,15 +283,17 @@ export function useSitiosAdmin(options?: UseSitiosAdminOptions) {
 
       const rows = ((data ?? []) as unknown) as SitioAdminRowWithUpdatedAt[];
       const sitios = rows.map(({ updated_at: _updatedAt, ...sitio }) => sitio);
+      const profiles = await fetchCreatorProfiles(sitios);
+      const enrichedSitios = enrichSitiosWithCreators(sitios, profiles);
       const latestUpdatedAt =
         rows.length > 0 ? rows[rows.length - 1]?.updated_at ?? cursor : cursor;
 
       return {
-        sitios: sitios as SitioRelevanteAdmin[],
+        sitios: enrichedSitios as SitioRelevanteAdmin[],
         latestUpdatedAt,
       };
     },
-    [buildBaseQuery],
+    [buildBaseQuery, fetchCreatorProfiles],
   );
 
   const fetchFullSnapshot = useCallback(async () => {
@@ -244,8 +304,12 @@ export function useSitiosAdmin(options?: UseSitiosAdminOptions) {
       "cargar sitios",
     );
     if (err) throw err;
-    return sortSitiosAdmin(((data ?? []) as unknown) as SitioRelevanteAdmin[]);
-  }, [buildBaseQuery]);
+    const sitios = sortSitiosAdmin(
+      ((data ?? []) as unknown) as SitioRelevanteAdmin[],
+    );
+    const profiles = await fetchCreatorProfiles(sitios);
+    return enrichSitiosWithCreators(sitios, profiles);
+  }, [buildBaseQuery, fetchCreatorProfiles]);
 
   const fetchSitios = useCallback(async () => {
     const requestId = ++requestIdRef.current;
@@ -293,10 +357,15 @@ export function useSitiosAdmin(options?: UseSitiosAdminOptions) {
               incremental.sitios,
             ).filter((sitio) => visibleIds.has(sitio.id)),
           );
+          const nextProfiles = await fetchCreatorProfiles(nextSnapshot);
+          const enrichedSnapshot = enrichSitiosWithCreators(
+            nextSnapshot,
+            nextProfiles,
+          );
 
-          adminCacheByScope.set(currentScopeKey, nextSnapshot);
-          setSitios(nextSnapshot);
-          void replaceCachedSitiosAdmin(currentScopeKey, nextSnapshot);
+          adminCacheByScope.set(currentScopeKey, enrichedSnapshot);
+          setSitios(enrichedSnapshot);
+          void replaceCachedSitiosAdmin(currentScopeKey, enrichedSnapshot);
 
           if (syncCursorKey && incremental.latestUpdatedAt) {
             void setSyncMetadata(syncCursorKey, incremental.latestUpdatedAt);
@@ -341,6 +410,7 @@ export function useSitiosAdmin(options?: UseSitiosAdminOptions) {
     }
   }, [
     fetchChangesSince,
+    fetchCreatorProfiles,
     fetchFullSnapshot,
     fetchLatestUpdatedAt,
     fetchVisibleIds,

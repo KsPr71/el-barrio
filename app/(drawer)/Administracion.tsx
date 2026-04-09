@@ -83,6 +83,8 @@ function SitioAdminRow({
       : null;
   const estadoStyle =
     ESTADO_CHIP_STYLE[sitio.estado_suscripcion] ?? ESTADO_CHIP_STYLE.creado;
+  const creadorNombre = sitio.creador_nombre?.trim() || "Sin nombre";
+  const creadorEmail = sitio.creador_email?.trim() || "Sin correo";
 
   return (
     <TouchableOpacity
@@ -93,6 +95,13 @@ function SitioAdminRow({
         { backgroundColor: colors.surface, borderColor: colors.border },
       ]}
     >
+      <View
+        style={[styles.estadoChipTopRight, { backgroundColor: estadoStyle.bg }]}
+      >
+        <Text style={[styles.estadoChipText, { color: estadoStyle.text }]}>
+          {ESTADO_LABELS[sitio.estado_suscripcion] ?? sitio.estado_suscripcion}
+        </Text>
+      </View>
       <View style={styles.rowMain}>
         <Text
           style={[styles.rowNombre, { color: colors.foreground }]}
@@ -108,15 +117,18 @@ function SitioAdminRow({
             {tipo.tipo}
           </Text>
         ) : null}
-        <View style={styles.chipRow}>
-          <View
-            style={[styles.estadoChip, { backgroundColor: estadoStyle.bg }]}
+        <View style={styles.rowSubscriberWrap}>
+          <Text style={[styles.rowSubscriberLabel, { color: colors.muted }]}>
+            Suscrito por:
+          </Text>
+          <Text
+            style={[styles.rowSubscriberValue, { color: colors.foreground }]}
+            numberOfLines={2}
           >
-            <Text style={[styles.estadoChipText, { color: estadoStyle.text }]}>
-              {ESTADO_LABELS[sitio.estado_suscripcion] ??
-                sitio.estado_suscripcion}
-            </Text>
-          </View>
+            {creadorNombre} | {creadorEmail}
+          </Text>
+        </View>
+        <View style={styles.chipRow}>
           {tiempoSuscripcion !== null && (
             <View
               style={[
@@ -983,16 +995,28 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
+    position: "relative",
   },
-  rowMain: { marginBottom: 0 },
+  rowMain: { marginBottom: 0, paddingRight: 104, paddingTop: 2 },
   rowNombre: { fontSize: 16, fontWeight: "600" },
   rowMeta: { fontSize: 13, marginTop: 2 },
+  rowSubscriberWrap: { marginTop: 10 },
+  rowSubscriberLabel: { fontSize: 12, fontWeight: "600", marginBottom: 2 },
+  rowSubscriberValue: { fontSize: 13, lineHeight: 18 },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
     gap: 8,
     marginTop: 8,
+  },
+  estadoChipTopRight: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
   },
   estadoChip: {
     paddingVertical: 4,
