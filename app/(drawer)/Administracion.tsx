@@ -9,18 +9,21 @@ import {
 } from "@/hooks/use-sitios-admin";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useTiposSitio } from "@/hooks/use-tipos-sitio";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
+  LayoutAnimation,
   Linking,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 
@@ -128,7 +131,7 @@ function SitioAdminRow({
             >
               <Text style={styles.chipSuscripcionText}>
                 {tiempoSuscripcion === "Vencido"
-                  ? "Suscripción vencida"
+                  ? "Suscrpción vencida"
                   : `Vence en ${tiempoSuscripcion}`}
               </Text>
             </View>
@@ -143,6 +146,7 @@ export default function AdministracionScreen() {
   const colors = useColors();
   const {
     user,
+    profile,
     loading: authLoading,
     error: authError,
     isAdmin,
@@ -159,7 +163,7 @@ export default function AdministracionScreen() {
     crearSitio,
     actualizarSitio,
     refresh: refreshSitios,
-  } = useSitiosAdmin();
+  } = useSitiosAdmin({ userId: user?.id ?? null, isAdmin });
   const [authMode, setAuthMode] = useState<"in" | "up">("in");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -170,11 +174,29 @@ export default function AdministracionScreen() {
     null,
   );
   const [busqueda, setBusqueda] = useState("");
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const [estadoFiltro, setEstadoFiltro] = useState<
     "todos" | "creado" | "en_revision" | "aceptado"
   >("todos");
 
   const { tipos } = useTiposSitio();
+
+  useEffect(() => {
+    if (
+      Platform.OS === "android" &&
+      UIManager.setLayoutAnimationEnabledExperimental
+    ) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
+  const handleToggleSearch = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (searchExpanded) {
+      setBusqueda("");
+    }
+    setSearchExpanded((prev) => !prev);
+  };
 
   const sitiosFiltrados = useMemo(() => {
     let base = sitios;
@@ -271,7 +293,7 @@ export default function AdministracionScreen() {
                   {
                     backgroundColor: colors.background,
                     color: colors.foreground,
-                    borderColor: colors.border,
+                    borderColor: colors.primary,
                   },
                 ]}
               />
@@ -404,86 +426,162 @@ export default function AdministracionScreen() {
           <View
             style={{
               backgroundColor: colors.surface,
-              padding: 10,
-              borderRadius: 10,
+              padding: 12,
+              borderRadius: 14,
               borderWidth: 1,
               borderColor: colors.border,
+              position: "relative",
               marginBottom: 20,
             }}
           >
-            <Text
+            <View
               style={{
-                color: colors.foreground,
-                fontWeight: "bold",
-                marginBottom: 5,
+                position: "absolute",
+                top: 12,
+                right: 12,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 999,
+                backgroundColor: colors.primary + "12",
+                borderWidth: 1,
+                borderColor: colors.primary + "30",
+                zIndex: 1,
               }}
             >
-              {" "}
-              Usuario
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.muted }]}>
-              {user?.email} {isAdmin ? "(Admin)" : "(Usuario)"}
-            </Text>
-
+              <Text
+                style={{
+                  color: colors.primary,
+                  fontSize: 11,
+                  fontWeight: "700",
+                }}
+              >
+                {isAdmin ? "Admin" : "Usuario"}
+              </Text>
+            </View>
             <View
               style={{
                 flexDirection: "row",
-                alignItems: "flex-end",
-                gap: 8,
-                marginBottom: 5,
+                alignItems: "flex-start",
+                gap: 12,
               }}
             >
-              <TouchableOpacity
-                onPress={signOut}
-                style={[
-                  styles.logoutBtn,
-                  {
-                    borderColor: colors.border,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    marginTop: 10,
-                    alignSelf: "flex-end",
-                    backgroundColor: colors.primary,
-                  },
-                ]}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  flex: 1,
+                }}
               >
-                <View
-                  style={{
-                    padding: 2,
-                    borderRadius: 30,
-                    backgroundColor: colors.secondary,
-                  }}
-                >
-                  <IconSymbol name="xmark" size={20} color={colors.primary} />
+                <View style={{ alignItems: "center" }}>
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      backgroundColor: colors.primary + "14",
+                      borderWidth: 1,
+                      borderColor: colors.primary,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    >
+                      <IconSymbol
+                        name="person.fill"
+                        size={22}
+                        color={colors.primary}
+                      />
+                    </View>
                 </View>
-                <Text style={[styles.logoutBtnText, { color: "#FFF" }]}>
-                  Cerrar sesión
-                </Text>
-              </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontWeight: "700",
+                      fontSize: 15,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {profile?.name?.trim() ||
+                      (user?.user_metadata?.display_name as
+                        | string
+                        | undefined) ||
+                      (user?.user_metadata?.full_name as string | undefined) ||
+                      "Sin nombre"}
+                  </Text>
+                  <Text
+                    style={[styles.subtitle, { color: colors.muted }]}
+                    numberOfLines={1}
+                  >
+                    {user?.email ?? "Sin correo"}
+                  </Text>
+                </View>
+              </View>
             </View>
+            <TouchableOpacity
+              onPress={signOut}
+              style={[
+                styles.logoutBtn,
+                {
+                  borderColor: colors.primary + "35",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  backgroundColor: colors.primary,
+                  marginTop: 12,
+                  alignSelf: "stretch",
+                },
+              ]}
+            >
+              <IconSymbol name="xmark" size={16} color="#FFF" />
+              <Text style={[styles.logoutBtnText, { color: "#FFF" }]}>
+                {"Cerrar sesión"}
+              </Text>
+            </TouchableOpacity>
           </View>
           <Separador />
         </View>
 
         {isAdmin && (
           <>
-            <View
-              style={[
-                styles.searchContainer,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
-              <Text style={[styles.searchIcon, { color: colors.muted }]}>
-                🔍
-              </Text>
+            <View style={styles.searchRow}>
+              <TouchableOpacity
+                onPress={handleToggleSearch}
+                style={[
+                  styles.searchToggleBtn,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <IconSymbol
+                  name="magnifyingglass"
+                  size={18}
+                  color={colors.muted}
+                />
+              </TouchableOpacity>
+              {searchExpanded && (
+                <View
+                  style={[
+                    styles.searchContainer,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
               <TextInput
                 value={busqueda}
                 onChangeText={setBusqueda}
-                placeholder="Buscar por nombre, dirección o descripción..."
+                placeholder={"Buscar por nombre, dirección o descripción..."}
                 placeholderTextColor={colors.muted}
                 style={[styles.searchInput, { color: colors.foreground }]}
+                autoFocus
               />
+                </View>
+              )}
             </View>
             <View style={[styles.chipRow, { marginTop: 8, marginBottom: 10 }]}>
               {(["todos", "creado", "en_revision", "aceptado"] as const).map(
@@ -729,7 +827,7 @@ export default function AdministracionScreen() {
                   }}
                 >
                   <Text>
-                    Al terminar debe contactar al Administrador por Whatssap
+                    Al terminar debe contactar al Administrador por WhatsApp
                   </Text>
                 </View>
               </View>
@@ -784,16 +882,31 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   logoutBtnText: { fontSize: 14, fontWeight: "500" },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+  },
+  searchToggleBtn: {
+    width: 42,
+    height: 42,
+    borderWidth: 1,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
-    marginBottom: 16,
+    minHeight: 42,
   },
   searchIcon: { fontSize: 18, marginRight: 8 },
-  searchInput: { flex: 1, paddingVertical: 12, fontSize: 16 },
+  searchInput: { flex: 1, paddingVertical: 8, fontSize: 15 },
   sectionTitle: { fontSize: 16, fontWeight: "600", marginBottom: 12 },
   categoryGroup: { marginBottom: 20 },
   categoryLabel: {

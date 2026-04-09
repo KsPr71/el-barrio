@@ -5,7 +5,6 @@ import {
   replaceCachedSitiosAdmin,
   setSyncMetadata,
 } from "@/lib/offline-sitios-db";
-import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type SitioRelevanteAdmin = {
@@ -54,6 +53,11 @@ export type InsertSitioRelevante = {
 
 export type UpdateSitioRelevante = InsertSitioRelevante & {
   estado_suscripcion?: "creado" | "en_revision" | "aceptado";
+};
+
+type UseSitiosAdminOptions = {
+  userId?: string | null;
+  isAdmin?: boolean;
 };
 
 const adminCacheByScope = new Map<string, SitioRelevanteAdmin[]>();
@@ -129,14 +133,15 @@ function shouldDoFullSync(lastFullSyncAt: string | null, hasLocalData: boolean) 
   return Date.now() - parsed >= FULL_SYNC_MAX_AGE_MS;
 }
 
-export function useSitiosAdmin() {
-  const { user, isAdmin } = useSupabaseAuth();
+export function useSitiosAdmin(options?: UseSitiosAdminOptions) {
+  const userId = options?.userId ?? null;
+  const isAdmin = options?.isAdmin ?? false;
   const [sitios, setSitios] = useState<SitioRelevanteAdmin[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
-  const scopeKey = user ? `${isAdmin ? "admin" : "user"}:${user.id}` : null;
+  const scopeKey = userId ? `${isAdmin ? "admin" : "user"}:${userId}` : null;
   const syncCursorKey = scopeKey ? `sitios_admin:${scopeKey}:last_sync_at` : null;
   const fullSyncAtKey = scopeKey
     ? `sitios_admin:${scopeKey}:last_full_sync_at`
@@ -160,8 +165,8 @@ export function useSitiosAdmin() {
     (selectClause: string, includeCreatedOrder = false) => {
       let query = supabase.from("sitios_relevantes").select(selectClause);
 
-      if (!isAdmin && user) {
-        query = query.eq("creado_por", user.id);
+      if (!isAdmin && userId) {
+        query = query.eq("creado_por", userId);
       }
 
       if (includeCreatedOrder) {
@@ -170,7 +175,7 @@ export function useSitiosAdmin() {
 
       return query;
     },
-    [isAdmin, user],
+    [isAdmin, userId],
   );
 
   const fetchLatestUpdatedAt = useCallback(async (): Promise<string | null> => {
@@ -244,26 +249,29 @@ export function useSitiosAdmin() {
 
   const fetchSitios = useCallback(async () => {
     const requestId = ++requestIdRef.current;
-    if (!user) {
+    if (!userId) {
       setError(null);
       setSitios([]);
       setLoading(false);
       setRefreshing(false);
       return;
     }
-    const currentScopeKey = `${isAdmin ? "admin" : "user"}:${user.id}`;
+
+    const currentScopeKey = `${isAdmin ? "admin" : "user"}:${userId}`;
     const hasVisibleData =
       (adminCacheByScope.get(currentScopeKey)?.length ?? 0) > 0;
+
     setRefreshing(true);
     if (!hasVisibleData) {
       setLoading(true);
     }
     setError(null);
+
     try {
-      // No debe bloquear la carga de la lista (si cuelga, puede dejar el spinner infinito).
       void supabase.rpc("expirar_suscripciones").then(({ error }) => {
         if (error) console.warn("[useSitiosAdmin] expirar_suscripciones:", error.message);
       });
+
       const [lastSyncAt, lastFullSyncAt] = await Promise.all([
         syncCursorKey ? getSyncMetadata(syncCursorKey) : Promise.resolve(null),
         fullSyncAtKey ? getSyncMetadata(fullSyncAtKey) : Promise.resolve(null),
@@ -332,7 +340,6 @@ export function useSitiosAdmin() {
       }
     }
   }, [
-    buildBaseQuery,
     fetchChangesSince,
     fetchFullSnapshot,
     fetchLatestUpdatedAt,
@@ -340,7 +347,7 @@ export function useSitiosAdmin() {
     fullSyncAtKey,
     isAdmin,
     syncCursorKey,
-    user,
+    userId,
   ]);
 
   useEffect(() => {
@@ -386,8 +393,11 @@ export function useSitiosAdmin() {
 
   const crearSitio = useCallback(
     async (input: InsertSitioRelevante) => {
-      if (!user) throw new Error("Debes iniciar sesión para crear un sitio");
-      if (!input.acepto_terminos) throw new Error("Debes aceptar los términos y condiciones");
+      if (!userId) throw new Error("Debes iniciar sesión para crear un sitio");
+      if (!input.acepto_terminos) {
+        throw new Error("Debes aceptar los términos y condiciones");
+      }
+
       const { data, error: err } = await supabase
         .from("sitios_relevantes")
         .insert({
@@ -406,22 +416,24 @@ export function useSitiosAdmin() {
           facebook_link: input.facebook_link?.trim() || null,
           instagram_link: input.instagram_link?.trim() || null,
           sitio_web: input.sitio_web?.trim() || null,
-          creado_por: user.id,
+          creado_por: userId,
           estado_suscripcion: "creado",
           acepto_terminos: input.acepto_terminos ?? false,
         })
         .select("id")
         .single();
+
       if (err) throw err;
       await fetchSitios();
       return data?.id as number;
     },
-    [user, fetchSitios],
+    [userId, fetchSitios],
   );
 
   const cambiarEstado = useCallback(
     async (id: number, estado: "creado" | "en_revision" | "aceptado") => {
       if (!isAdmin) throw new Error("Solo el administrador puede cambiar el estado");
+
       const payload: Record<string, unknown> = {
         estado_suscripcion: estado,
         fecha_cambio_estado: new Date().toISOString(),
@@ -429,6 +441,7 @@ export function useSitiosAdmin() {
       if (estado === "aceptado") {
         payload.fecha_aceptado = new Date().toISOString();
       }
+
       const { error: err } = await supabase
         .from("sitios_relevantes")
         .update(payload)
@@ -462,6 +475,7 @@ export function useSitiosAdmin() {
         instagram_link: input.instagram_link?.trim() || null,
         sitio_web: input.sitio_web?.trim() || null,
       };
+
       if (isAdmin && estado != null) {
         payload.estado_suscripcion = estado;
         payload.fecha_cambio_estado = new Date().toISOString();
@@ -469,6 +483,7 @@ export function useSitiosAdmin() {
           payload.fecha_aceptado = new Date().toISOString();
         }
       }
+
       const { error: err } = await supabase
         .from("sitios_relevantes")
         .update(payload)
